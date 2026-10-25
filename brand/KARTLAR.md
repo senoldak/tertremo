@@ -1,6 +1,6 @@
 # tertremo kart kılavuzu
 
-Kanaldaki her paylaşım çizimlidir. 21 kart var: 11 olay kartı (bir depreme ya da diziye bağlı) ve 10 dönemsel kart (takvimle). Kodu `scripts/kart/` içindedir; örnek PNG'ler ve pafta için `node scripts/kart/ornekler.mjs [klasör]` (dönemsel örneklerde veri uydurmadır, köşede "ÖRNEK" damgası taşır).
+Kanaldaki her paylaşım çizimlidir. 20 kart var: 11 olay kartı (bir depreme ya da diziye bağlı) ve 9 dönemsel kart (takvimle). Kodu `scripts/kart/` içindedir; örnek PNG'ler ve pafta için `node scripts/kart/ornekler.mjs [klasör]` (dönemsel örneklerde veri uydurmadır, köşede "ÖRNEK" damgası taşır).
 
 ## Düzen kuralları
 
@@ -16,7 +16,7 @@ Kanaldaki her paylaşım çizimlidir. 21 kart var: 11 olay kartı (bir depreme y
 - "tehlike" ve "uyarı" hiçbir kartta geçmez.
 - Her olasılık ve olağan dışı kartında "Tahmin değildir." (olasılık kartlarında "Olasılık tahminidir; deprem tahmini değildir.") notu bulunur.
 - Olasılık "en az bir" diye yazılır ("7 günde en az bir M≥5"), "olacak" diye değil.
-- Yorum, süs, abartı yok; tarihte bugün kartında dil sade ve saygılıdır.
+- Yorum, süs, abartı yok.
 - Yer adları Türkçe: Türkiye'de il / ilçe, dünyada ülke adı ya da "… açıkları".
 
 ## Kartlar
@@ -50,7 +50,6 @@ Saatler TSİ. Eşikler Worker'daki uygulamadır (`vesaire/tertremo/src/kart.js`,
 | 15 | Aylık b haritası (`aylikB`) | ayın 1'i 10:30 | 1° hücrelerde b (n ≥ 50) | EMSC kataloğu | n < 50 hücre boş; betimleyicidir, "tahmin değildir" |
 | 16 | Arka plan hızı (`ceyreklikLambda`) | Oca / Nis / Tem / Eki 1'i 11:00 | bağımsız deprem hızı λ (yıl⁻¹, M ≥ 4'e çevrilmiş), hücre haritası | EMSC kataloğu, kümeleme ayıklanmış | "Tahmin değildir" |
 | 17 | Dünya haftası (`dunyaHafta`) | Pazar 20:00 | son 7 günün Mw ≥ 5 dünya depremleri, levha sınırları | USGS (kamu malı), EMSC; PB2002 | Levha atfı kartta |
-| 18 | Tarihte bugün (`tarihteBugun`) | her gün 09:00 | o tarihte Türkiye'de Mw ≥ 6 kayıt: tarih, yer, büyüklük, harita | `data/tarihte-bugun.json` (USGS, Kandilli, AFAD kayıtları) | Kayıt yoksa hiçbir şey gönderilmez |
 | 19 | Uzun dönem olasılık (`uzunDonem`) | ayın 1'i 12:00 | P = 1 − e^(−λT), T = 1 / 10 / 50 yıl, Mw ≥ 5 / 6 / 7; bölge ve Türkiye; bootstrap %10–%90 | EMSC (2018–), USGS uzun katalog (Mw ≥ 6 ve 7), Gardner–Knopoff ayıklama | Bölgeler birbiriyle kıyaslanmaz; kısa katalog notu; "Olasılık tahminidir; deprem tahmini değildir." |
 | 20 | Haftalık olasılık, ETAS (`etas`) | Pazartesi 10:00 | önümüzdeki 7 günde en az bir Mw ≥ 5 / 6 olasılığı, Türkiye ve 7 bölge | ETAS (Ogata; Mizrahi vd. 2021) | Yayın kapısı: 52 haftalık ileriye dönük sınavı geçmedikçe kanala gitmez, yalnızca özel sohbete düşer. Ön kayıt: [docs/etas-on-kayit.md](../docs/etas-on-kayit.md) |
 

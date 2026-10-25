@@ -14,7 +14,7 @@
 # Dönemsel takvim (tasarım §17.1/§17.4). YALNIZ uygulanmış olanlar aktif; diğerleri ilgili görev
 # (K10–K12) bitince aşağıdaki `on.schedule` listesine ve `mod` eşlemesine eklenecek:
 #   gunluk        21:00 TSİ  0 18 * * *      (K10, AKTİF)  haftalik  Pzt 08:00  0 5 * * 1   (K10, AKTİF)
-#   dunya-haftasi Paz 20:00  0 17 * * 0      (K10, AKTİF)  tarihte-bugun 09:00      0 6 * * *   (K12, AKTİF)
+#   dunya-haftasi Paz 20:00  0 17 * * 0      (K10, AKTİF)
 #   aylik-gr      ayın 1'i 10:00  0 7 1 * *  (K11, AKTİF)  aylik-b  10:30      30 7 1 * *  (K11, AKTİF)
 #   ceyreklik λ   Oca/Nis/Tem/Eki 1'i 11:00  0 8 1 1,4,7,10 *  (K11, AKTİF)
 #   uzun-donem    ayın 1'i 12:00  0 9 1 * *  (K14, AKTİF)
@@ -25,12 +25,11 @@ on:
   workflow_dispatch:
     inputs:
       mod:
-        description: 'olay  |  donemsel etas  |  donemsel tarihteBugun  |  donemsel aylikGr  |  donemsel aylikB  |  donemsel ceyreklikLambda  |  donemsel uzunDonem  |  donemsel gunluk  |  donemsel haftalik  |  donemsel dunyaHafta'
+        description: 'olay  |  donemsel etas  |  donemsel aylikGr  |  donemsel aylikB  |  donemsel ceyreklikLambda  |  donemsel uzunDonem  |  donemsel gunluk  |  donemsel haftalik  |  donemsel dunyaHafta'
         required: true
         default: 'olay'
   schedule:
     - cron: '0 7 * * 1'   # etas — haftalık olasılık, Pzt 10:00 TSİ
-    - cron: '0 6 * * *'   # tarihte bugün — her gün 09:00 TSİ (o gün kayıt yoksa sessizce çıkar)
     - cron: '0 7 1 * *'   # aylık Gutenberg–Richter — ayın 1'i 10:00 TSİ
     - cron: '30 7 1 * *'  # aylık b haritası — ayın 1'i 10:30 TSİ
     - cron: '0 8 1 1,4,7,10 *'  # çeyreklik λ haritası — Oca/Nis/Tem/Eki 1'i 11:00 TSİ
@@ -60,7 +59,6 @@ jobs:
         run: |
           case "$ZAMANLAMA" in
             '0 7 * * 1') MOD='donemsel etas' ;;
-            '0 6 * * *') MOD='donemsel tarihteBugun' ;;
             '0 7 1 * *') MOD='donemsel aylikGr' ;;
             '30 7 1 * *') MOD='donemsel aylikB' ;;
             '0 8 1 1,4,7,10 *') MOD='donemsel ceyreklikLambda' ;;
@@ -72,7 +70,7 @@ jobs:
             *) echo "bilinmeyen zamanlama: $ZAMANLAMA" >&2; exit 1 ;;
           esac
           case "$MOD" in
-            olay|'donemsel etas'|'donemsel tarihteBugun'|'donemsel aylikGr'|'donemsel aylikB'|'donemsel ceyreklikLambda'|'donemsel uzunDonem'|'donemsel gunluk'|'donemsel haftalik'|'donemsel dunyaHafta') ;;
+            olay|'donemsel etas'|'donemsel aylikGr'|'donemsel aylikB'|'donemsel ceyreklikLambda'|'donemsel uzunDonem'|'donemsel gunluk'|'donemsel haftalik'|'donemsel dunyaHafta') ;;
             *) echo "geçersiz mod: $MOD" >&2; exit 1 ;;
           esac
           echo "mod=$MOD" >> "$GITHUB_OUTPUT"

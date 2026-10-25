@@ -22,7 +22,6 @@ const HAFTALIK_ZAMAN = Date.UTC(2026, 9, 26, 5, 0, 0);       // Pazartesi 08:00 
 const DUNYA_HAFTA_ZAMAN = Date.UTC(2026, 9, 25, 17, 0, 0);   // Pazar 20:00 TSİ
 const AYLIK_ZAMAN = Date.UTC(2026, 10, 1, 4, 0, 0);          // 1 Kasım 2026 07:00 TSİ
 const CEYREK_ZAMAN = Date.UTC(2027, 0, 1, 5, 0, 0);          // 1 Ocak 2027
-const TARIHTE_ZAMAN = Date.UTC(2026, 7, 17, 6, 0, 0);        // 17 Ağustos: Kocaeli 1999
 
 // Deterministik sahte rastgele (örnekler her çalıştırmada aynı çıksın).
 let tohum = 7;
@@ -183,7 +182,6 @@ const CIZIM = [
   [15, 'Aylık b haritası', () => DONEMSEL.aylikB({ hucreler: hucreVeri(AYLIK_ZAMAN) }, { simdi: AYLIK_ZAMAN }), true],
   [16, 'Arka plan hızı (λ)', () => DONEMSEL.ceyreklikLambda({ hucreler: hucreVeri(CEYREK_ZAMAN) }, { simdi: CEYREK_ZAMAN }), true],
   [17, 'Dünya haftası', () => DONEMSEL.dunyaHafta({}, { simdi: DUNYA_HAFTA_ZAMAN, db: sahteDb(dunyaOlaylar) }), true],
-  [18, 'Tarihte bugün', () => DONEMSEL.tarihteBugun({}, { simdi: TARIHTE_ZAMAN })],
   [19, 'Uzun dönem olasılık', () => DONEMSEL.uzunDonem({ uzunDonem: uzunBlok }, { simdi: Date.UTC(2026, 10, 1, 9) }), true],
   [20, 'Haftalık olasılık (ETAS)', () => DONEMSEL.etas(etasVeri), true],
   [21, 'Etki (ShakeMap)', async () => (await import('./kartlar/etki.mjs')).etki({ olay: olayEtki }, null, { fetchFn: sahteUsgs })],

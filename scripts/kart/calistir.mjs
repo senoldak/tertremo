@@ -1,6 +1,6 @@
 // Kart çalıştırıcı.
 //   node scripts/kart/calistir.mjs olay            → kuyruğu boşaltır (her 'bekliyor' kart: talep → çiz → gönder → bitir)
-//   node scripts/kart/calistir.mjs donemsel <tur>  → dönemsel kart (etas, tarihteBugun, gunluk, haftalik, dunyaHafta, aylık kartlar)
+//   node scripts/kart/calistir.mjs donemsel <tur>  → dönemsel kart (etas, gunluk, haftalik, dunyaHafta, aylık kartlar)
 // Ortam: TERTREMO_KART_ANAHTARI (+ isteğe bağlı KART_ADRES), CF_D1_TOKEN, CF_HESAP, D1_ID. Telegram gönderimini Worker yapar.
 import fs from 'node:fs';
 import path from 'node:path';
@@ -46,11 +46,6 @@ export const DONEMSEL = {
   async ceyreklikLambda(kartVeri, o) { return (await import('./kartlar/lambdaharita.mjs')).ceyreklikLambda(kartVeri, o); },
   /** Aylık uzun dönem olasılık (Kart 19, ayın 1'i); veri yok / önbellek eskiyse null. */
   async uzunDonem(kartVeri, o) { return (await import('./kartlar/uzunDonem.mjs')).uzunDonem(kartVeri, o); },
-  /** Tarihte bugün: kart-veri.json gerekmez; o gün kayıt yoksa null (hiçbir şey gönderilmez). */
-  async tarihteBugun(kartVeri, o) {
-    const { tarihteBugun } = await import('./kartlar/tarihteBugun.mjs');
-    return tarihteBugun(kartVeri, o);
-  },
   /** Günlük (21:00 TSİ): bugünün Türkiye Mw ≥ 3 depremleri; boş gün de kart olur. D1'den okur, kart-veri.json gerekmez. */
   async gunluk(kartVeri, o) { return (await import('./kartlar/gunluk.mjs')).gunluk(kartVeri, o); },
   /** Haftalık (Pzt 08:00 TSİ): geçen haftanın Türkiye özeti. */
@@ -60,7 +55,7 @@ export const DONEMSEL = {
 };
 
 /** kart-veri.json'a bağlı olmayan dönemsel türler (veriyi D1'den ya da dosyadan kendileri okur). */
-const VERISIZ = new Set(['tarihteBugun', 'gunluk', 'haftalik', 'dunyaHafta']);
+const VERISIZ = new Set(['gunluk', 'haftalik', 'dunyaHafta']);
 
 const json = (s, varsayilan) => { try { return JSON.parse(s); } catch { return varsayilan; } };
 const tsiTarih = (ms) => new Date(ms + 3 * 3600_000).toISOString().slice(0, 10);
