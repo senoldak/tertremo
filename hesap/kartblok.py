@@ -5,7 +5,7 @@ from datetime import datetime, timezone
 
 import numpy as np
 
-from hesap.hucre import EPS, N_B_EN_AZ, b_aki_utsu, kutula, mc_maxc
+from hesap.hucre import EPS, N_B_EN_AZ, b_aki_utsu, kutula
 
 UTC = timezone.utc
 TSI_MS = 3 * 3600 * 1000
@@ -21,15 +21,17 @@ def ay_araligi(simdi_ms):
     return bas, bit, f'{y:04d}-{a:02d}'
 
 
-def gr_blogu(mw, ay):
-    """Bir aylık katalog → Gutenberg–Richter bloğu; Mc'nin üstünde 50'den az olay varsa None.
-    histogram: 0,1'lik kutular [[merkez, sayı], …] (sayı > 0); b, σ_b: Aki–Utsu / Shi–Bolt (hesap/hucre.py)."""
+def gr_blogu(mw, ay, mc):
+    """Son 12 ayın kataloğu (ay: bitiş ayı, kart başlığı) → Gutenberg–Richter bloğu; Mc katalog tamlığı
+    (gunluk.katalog_mc, MBS; tek aylık örnekte MAXC heterojen katalogda tamlığın altında kalıp b'yi çekiyordu).
+    Mc'nin üstünde 50'den az olay varsa None. histogram: 0,1'lik kutular [[merkez, sayı], …] (sayı > 0); b, σ_b: Aki–Utsu / Shi–Bolt (hesap/hucre.py)."""
     mw = np.asarray(mw, float)
     mw = mw[np.isfinite(mw)]
     if mw.size == 0:
         return None
+    if not (mc is not None and math.isfinite(mc)):
+        return None
     km = kutula(mw, DM)
-    mc = mc_maxc(mw, DM)
     n = int((km >= mc - EPS).sum())
     if n < N_B_EN_AZ:
         return None
@@ -39,7 +41,7 @@ def gr_blogu(mw, ay):
     tam = np.round(km / DM).astype(np.int64)
     kutular, sayilar = np.unique(tam, return_counts=True)
     return {
-        'ay': ay, 'n': n, 'toplam': int(mw.size), 'mc': float(mc), 'b': round(float(b), 4), 'sigma': round(float(sigma), 4),
+        'ay': ay, 'pencere': 'son 12 ay', 'n': n, 'toplam': int(mw.size), 'mc': float(mc), 'b': round(float(b), 4), 'sigma': round(float(sigma), 4),
         'dm': DM, 'histogram': [[round(float(k) * DM, 1), int(c)] for k, c in zip(kutular, sayilar)],
     }
 

@@ -431,14 +431,18 @@ def hesapla(ad, olaylar, onceki_param, baslangic_ms, simdi):
 
 # ---------- kart verisi ----------
 
-def kart_verisi(onbellek, olaylar_tr, hucreler_tr, bas_ms, simdi, kume_tr=None, b_tr=None):
+def kart_verisi(onbellek, olaylar_tr, hucreler_tr, bas_ms, simdi, kume_tr=None, b_tr=None, mc_tr=None):
     """Dönemsel kartların girdisi: hesap/.onbellek/kart-veri.json 'gr' (son ayın G–R bloğu) ve 'hucreler'
     (b ve λ haritaları; hucre tablosuyla aynı değerler). Kart verisi D1 gecesini asla düşürmez: hata yalnız uyarıdır."""
     yol = os.path.join(onbellek, 'kart-veri.json')
     parcalar = {}
     ay_bas, ay_bit, ay = kartblok.ay_araligi(simdi)
-    mw_ay = [o['mw'] for o in olaylar_tr if ay_bas <= o['zaman_ms'] < ay_bit]
-    parcalar['gr'] = kartblok.gr_blogu(mw_ay, ay)
+    # G–R: son 12 ay (önceki ayın sonuna kadar), katalog Mc'sinin (MBS) üstünde; kart başlığında ay korunur
+    if mc_tr is None:
+        tum = sorted(olaylar_tr, key=lambda o: o['zaman_ms'])
+        mc_tr = katalog_mc('tr', np.array([o['zaman_ms'] for o in tum]), np.array([o['mw'] for o in tum]))[0] if tum else math.nan
+    mw_12 = [o['mw'] for o in olaylar_tr if ay_bit - 365.25 * GUN_MS <= o['zaman_ms'] < ay_bit]
+    parcalar['gr'] = kartblok.gr_blogu(mw_12, ay, mc_tr)
     parcalar['hucreler'] = kartblok.hucre_blogu(hucreler_tr, simdi, bas_ms, b_tr)
     kartveri.guncelle(yol, parcalar)
     if kume_tr:

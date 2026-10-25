@@ -1,5 +1,5 @@
-// Kart 14 — Aylık Gutenberg–Richter. Veri: hesap/.onbellek/kart-veri.json → gr (hesap/kartblok.py: son takvim ayının Türkiye kataloğu,
-// 0,1'lik kutular, Mc = MAXC, b = Aki–Utsu, σ_b = Shi–Bolt). Grafik: kümülatif log N – M noktaları, Mc dikey çizgisi, Aki–Utsu doğrusu
+// Kart 14 — Aylık Gutenberg–Richter. Veri: hesap/.onbellek/kart-veri.json → gr (hesap/kartblok.py: son 12 ayın Türkiye kataloğu (başlıkta bitiş ayı),
+// 0,1'lik kutular, Mc = katalog tamlığı (MBS), b = Aki–Utsu, σ_b = Shi–Bolt). Grafik: kümülatif log N – M noktaları, Mc dikey çizgisi, Aki–Utsu doğrusu
 // (N(≥Mc) noktasından geçen, eğimi −b). Büyük sayı b, birim "b-değeri (± σ)".
 import { RENK, genislik, kart, sayiTr, yazi } from '../cekirdek.mjs';
 import { altBant, bantUyari, not, notUyari } from '../duzen.mjs';
@@ -66,8 +66,8 @@ export function grSvg(blok) {
   const bant = {
     sayi: sayiTr(blok.b, 2), birim: `b-değeri (± ${sayiTr(blok.sigma, 2)})`,
     baslik: `Gutenberg–Richter · ${ayYazi(blok.ay)}`,
-    satir1: `Türkiye ve çevresi · ${sayiTr(blok.n)} deprem, Mw ≥ ${sayiTr(blok.mc, 1)}`,
-    satir2: `Mc ${sayiTr(blok.mc, 1)} (MAXC) · artçılar ayıklanmadı`,
+    satir1: `Türkiye ve çevresi · ${sayiTr(blok.n)} deprem · son 12 ay, Mw ≥ ${sayiTr(blok.mc, 1)}`,
+    satir2: `Mc ${sayiTr(blok.mc, 1)} (MBS, katalog tamlığı) · artçılar ayıklanmadı`,
   };
   const svg = izgara + mc + rol('gr-noktalar', nokta) + dogru + dogruEtiket + not(NOT) + altBant(bant);
   return { svg, uyari: [...bantUyari(bant), ...notUyari(NOT)] };
@@ -77,10 +77,10 @@ export function grSvg(blok) {
 export function aciklama(blok) {
   const a = [
     `<b>Gutenberg–Richter b-değeri</b> · ${ayYazi(blok.ay)}`,
-    `Türkiye ve çevresinde ${ayYazi(blok.ay)} ayında kaydedilen ${sayiTr(blok.toplam)} depremin büyüklük dağılımı: tamlık büyüklüğü (Mc) ${sayiTr(blok.mc, 1)}, ` +
+    `Türkiye ve çevresinde ${ayYazi(blok.ay)} ayına kadarki son 12 ayda kaydedilen ${sayiTr(blok.toplam)} depremin büyüklük dağılımı: tamlık büyüklüğü (Mc) ${sayiTr(blok.mc, 1)}, ` +
     `bu büyüklüğün üstünde ${sayiTr(blok.n)} deprem. b-değeri <b>${sayiTr(blok.b, 2)}</b> (± ${sayiTr(blok.sigma, 2)}).`,
-    'b-değeri, küçük depremlerin büyüklere oranını anlatır; tek bir ayın değeri, örnek küçük olduğu için tek başına yorumlanmamalıdır. Artçılar ayıklanmamıştır.',
-    'Betimleyici; tahmin değildir. Yöntem: Aki–Utsu b, Shi–Bolt σ_b, MAXC Mc. Veri: EMSC.',
+    'b-değeri, küçük depremlerin büyüklere oranını anlatır; Mc altı kayıtlar eksik olduğundan b yalnız Mc ve üstüyle hesaplanır. Artçılar ayıklanmamıştır.',
+    'Betimleyici; tahmin değildir. Yöntem: Aki–Utsu b, Shi–Bolt σ_b, Mc: MBS (katalog tamlığı). Veri: EMSC.',
   ].join('\n\n');
   return a.length > 1024 ? a.slice(0, 1020).replace(/<[^>]*$/, '') + '…' : a;
 }

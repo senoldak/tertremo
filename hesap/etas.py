@@ -173,6 +173,8 @@ def mc_egitim(z, m, bas=EGITIM_BAS, bit=EGITIM_BIT):
 
 
 def kumele(z, e, b, m):
+    # DONDURULDU: ETAS zinciri ön kayıtla sabit (docs/etas-on-kayit.md); b0 için mc_maxc BİLEREK korunuyor,
+    # gece hesabının MBS tabanlı b'siyle farkı bilinen bir sapmadır.
     """Gece hesabıyla aynı en yakın komşu kümelemesi (gunluk.hesapla): bağımsız olay maskesi ve kullanılan d_f."""
     d_f = korelasyon_boyutu(e, b)
     if not (D_F_BANT[0] <= d_f <= D_F_BANT[1]):

@@ -130,16 +130,20 @@ describe('b haritası', () => {
 });
 
 describe('λ haritası', () => {
-  it('n < 50 ve Mc > 4 hücre boş; kalanlar çizilir', () => {
+  it('n < 10 ve Mc > 4 hücre boş; kalanlar çizilir', () => {
     const r = lambdaSvg(hucreVeri([...ornekHucreler(), hucre('36_30', null, null, 3, 0), hucre('35_30', 1.0, 0.1, 80, 5, 4.2)]));
-    expect(r.cizilen).toBe(5);                 // 39_40 n=12 boş, 36_30 n=3 boş, 35_30 Mc 4,2 boş
+    expect(r.cizilen).toBe(6);                 // 39_40 n=12 artık çizilir (n ≥ 10), 36_30 n=3 boş, 35_30 Mc 4,2 boş
     expect(r.svg).toContain('data-rol="lejant"');
     expect(r.metin).toContain('Betimleyici; tahmin değildir.');
     expect(r.metin).toContain("Mw ≥ 4'e çevrilmiş");
+    expect(r.metin).toContain("hücre b'si (n ≥ 50), yoksa Türkiye b'si");
+    expect(r.uyari).toEqual([]);
+    expect(lambdaSvg(hucreVeri([hucre('38_27', 1.0, 0.1, 9, 5, 4.0)])).cizilen).toBe(0);
   });
   it('Mw ≥ 4 çevirisi: λ·10^(−b(4−Mc)); güvenilmez b yerine Türkiye b', () => {
     expect(lambda4({ lambda: 100, mc: 3, n: 200, b: 1, sigma_b: 0.05 }, 0.9)).toBeCloseTo(10, 9);
     expect(lambda4({ lambda: 100, mc: 3, n: 200, b: 1.3, sigma_b: 0.2 }, 1.0)).toBeCloseTo(10, 9);   // σ_b > 0,15 → Türkiye b
+    expect(lambda4({ lambda: 100, mc: 3, n: 20, b: 0.5, sigma_b: 0.05 }, 1.0)).toBeCloseTo(10, 9);     // n < 50 → hücre b'si değil, Türkiye b'si
     expect(lambda4({ lambda: 7, mc: 4, n: 60, b: 1, sigma_b: 0.1 }, 1)).toBeCloseTo(7, 9);
     expect(turkiyeB({ turkiyeB: 1.04, hucreler: [] })).toBe(1.04);
     expect(turkiyeB({ hucreler: [hucre('a_b', 1.0, 0.05), hucre('c_d', 1.2, 0.05), hucre('e_f', 0.8, 0.05)] })).toBeCloseTo(1.0, 9);

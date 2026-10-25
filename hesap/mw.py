@@ -20,6 +20,8 @@ def mw(buyukluk, tur):
     """(mw, yaklasik) — JS mw() ile aynı işlem sırası."""
     t = str(tur if tur is not None else '').lower()
     if t == 'ml':
+        # NOT (ileride): 1,017 çarpanı 0,1'lik kutulamada moiré üretiyor (ör. Mw 3,7 kutusu ~76 olay, komşular ~1.000);
+        # b'yi Mc 3,7–3,8 civarında oynatır. Dönüşümün kendisi src/buyukluk.js ile birebir tutulur, kutulama düzeltmesi ayrı iş.
         return 1.017 * buyukluk - 0.012, False
     if t == 'md':
         return 1.111 * buyukluk - 0.459, False

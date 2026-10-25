@@ -35,10 +35,11 @@ def test_ay_araligi_onceki_takvim_ayi_tsi():
 
 def test_gr_blogu_sema_ve_b():
     m = gr_ornek(6000, 1.0, 2.0)
-    blok = kartblok.gr_blogu(m, '2026-09')
+    blok = kartblok.gr_blogu(m, '2026-09', 2.0)
+    assert blok['pencere'] == 'son 12 ay'
     assert set(blok) >= {'ay', 'n', 'toplam', 'mc', 'b', 'sigma', 'dm', 'histogram'}
     assert blok['ay'] == '2026-09'
-    assert 2.0 - 1e-9 <= blok['mc'] <= 2.2 + 1e-9
+    assert blok['mc'] == 2.0
     assert blok['b'] == pytest.approx(1.0, abs=0.08)
     assert 0 < blok['sigma'] < 0.1
     assert blok['dm'] == 0.1
@@ -48,8 +49,19 @@ def test_gr_blogu_sema_ve_b():
 
 
 def test_gr_blogu_az_veri_none():
-    assert kartblok.gr_blogu(gr_ornek(30, 1.0, 2.0), '2026-09') is None
-    assert kartblok.gr_blogu(np.array([]), '2026-09') is None
+    assert kartblok.gr_blogu(gr_ornek(30, 1.0, 2.0), '2026-09', 2.0) is None
+    assert kartblok.gr_blogu(np.array([]), '2026-09', 2.0) is None
+    assert kartblok.gr_blogu(gr_ornek(6000, 1.0, 2.0), '2026-09', float('nan')) is None
+
+
+def test_gr_blogu_katalog_mc_tabani():
+    # Mc verilen katalog tamlığı: altındaki eksik kayıt b'yi çekmez (MAXC 2,2 b'yi aşağı çekerdi)
+    r = np.random.default_rng(2)
+    ust = gr_ornek(2500, 1.1, 4.0, tohum=4)
+    alt = np.round(np.round(r.uniform(2.0, 3.9, 4000) / 0.1) * 0.1, 1)
+    blok = kartblok.gr_blogu(np.concatenate([alt, ust]), '2026-09', 4.0)
+    assert blok['mc'] == 4.0 and blok['n'] == 2500
+    assert blok['b'] == pytest.approx(1.1, abs=0.1)
 
 
 def test_hucre_blogu_hucre_tablosuyla_ayni():
