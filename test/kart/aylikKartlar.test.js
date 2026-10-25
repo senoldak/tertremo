@@ -99,6 +99,19 @@ describe('skalalar', () => {
 });
 
 describe('b haritası', () => {
+  it('patlatma ayıklandıysa kartta ve açıklamada not var (hücre/olay adı yok), düzen uyarısı yok', () => {
+    const v = { ...hucreVeri(ornekHucreler()), patlatmaAyiklandi: true };
+    const r = bSvg(v);
+    expect(r.metin).toContain('Olası patlatma kaynaklı küçük olaylar ayıklandı.');
+    expect(r.uyari).toEqual([]);
+    expect(bAciklama(v)).toContain('Olası patlatma kaynaklı küçük olaylar ayıklandı.');
+    expect(r.svg + bAciklama(v)).not.toMatch(/taş ocağı/i);
+    expect(bSvg(hucreVeri(ornekHucreler())).metin).not.toContain('patlatma');
+    const l = lambdaSvg(v);
+    expect(l.metin).toContain('Olası patlatma kaynaklı küçük olaylar ayıklandı.');
+    expect(l.uyari).toEqual([]);
+    expect(lAciklama(v)).toContain('patlatma');
+  });
   it('n < 50 hücre boş: çizilmez; σ_b > 0,15 hücre taramalı', () => {
     const r = bSvg(hucreVeri(ornekHucreler()));
     expect(r.cizilen).toBe(5);                 // 39_40 (b yok) çizilmez

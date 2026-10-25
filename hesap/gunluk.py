@@ -26,7 +26,7 @@ from typing import Callable, Optional
 import numpy as np
 
 from hesap import d1, etas
-from hesap import kartblok, kartveri, olasilik
+from hesap import kartblok, kartveri, olasilik, patlatma
 from hesap import katalog as kat
 from hesap.hucre import b_aki_utsu, hucre_anahtari, hucre_istatistik, mc_maxc
 from hesap.kume import en_yakin_komsu, esik, korelasyon_boyutu, mesafe_km
@@ -387,8 +387,18 @@ def hesapla(ad, olaylar, onceki_param, baslangic_ms, simdi):
     e = np.array([o['enlem'] for o in olaylar])
     bo = np.array([o['boylam'] for o in olaylar])
     m = np.array([o['mw'] for o in olaylar])
+    mc, mc_kaynak = katalog_mc(ad, z, m)   # Mc: bütün katalogla (ETAS zinciriyle aynı tanım)
+    # patlatma imzası (hesap/patlatma.py): bayraklı 1° hücrenin M < 3,5 olayları b/λ/baz ve NN uyumundan düşer (yalnız Türkiye)
+    bayrak, p0, n_test = ({}, math.nan, 0)
+    if ad == 'tr':
+        son = z >= baslangic_ms
+        bayrak, p0, n_test = patlatma.bayrakli(z[son], e[son], bo[son], m[son], ad)
+    at = patlatma.ayiklama_maskesi(z, e, bo, m, bayrak, ad)
+    ids_tum = ids
+    if at.any():
+        tut = ~at
+        ids, z, e, bo, m = [i for i, t in zip(ids, tut) if t], z[tut], e[tut], bo[tut], m[tut]
     d_f = korelasyon_boyutu(e, bo)
-    mc, mc_kaynak = katalog_mc(ad, z, m)
     b, _ = b_aki_utsu(m, mc)
     d_f_ham, b_ham = d_f, b
     if not (D_F_BANT[0] <= d_f <= D_F_BANT[1]):
@@ -421,17 +431,24 @@ def hesapla(ad, olaylar, onceki_param, baslangic_ms, simdi):
     for i, cid in enumerate(ids):
         le = float(log_eta[i])
         kume[cid] = [ids[ebeveyn[i]] if bagli[i] else None, round(le, 3) if math.isfinite(le) else None]
+    for cid in ids_tum:   # hesaptan düşenler (patlatma imzalı hücrede küçük olay): ebeveynsiz, η yok
+        kume.setdefault(cid, [None, None])
     hucreler = hucre_istatistik(z, e, bo, m, ~bagli, ad, baslangic_ms, simdi, mc_katalog=mc)
+    for s in hucreler:
+        if s['anahtar'] in bayrak:
+            s['patlatma'] = True
     ozet = {'n': len(ids), 'd_f_ham': round(d_f_ham, 3), 'b_ham': round(b_ham, 3), 'mc': mc, 'mc_kaynak': mc_kaynak,
             'log_eta0_ham': round(eta0, 3) if math.isfinite(eta0) else None, 'param_yaz': param_yaz,
             'bagli': int(bagli.sum()), 'hucre': len(hucreler),
+            'patlatma': {'p0': None if not math.isfinite(p0) else round(p0, 4), 'test': n_test, 'hucreler': bayrak,
+                         'ayiklanan': int(at.sum())},
             'anlamli': sum(1 for s in hucreler if s['bh_p'] is not None and s['bh_p'] < 0.05)}
     return p, kume, hucreler, ozet
 
 
 # ---------- kart verisi ----------
 
-def kart_verisi(onbellek, olaylar_tr, hucreler_tr, bas_ms, simdi, kume_tr=None, b_tr=None, mc_tr=None):
+def kart_verisi(onbellek, olaylar_tr, hucreler_tr, bas_ms, simdi, kume_tr=None, b_tr=None, mc_tr=None, patlatma_ozeti=None):
     """Dönemsel kartların girdisi: hesap/.onbellek/kart-veri.json 'gr' (son ayın G–R bloğu) ve 'hucreler'
     (b ve λ haritaları; hucre tablosuyla aynı değerler). Kart verisi D1 gecesini asla düşürmez: hata yalnız uyarıdır."""
     yol = os.path.join(onbellek, 'kart-veri.json')
@@ -443,7 +460,8 @@ def kart_verisi(onbellek, olaylar_tr, hucreler_tr, bas_ms, simdi, kume_tr=None, 
         mc_tr = katalog_mc('tr', np.array([o['zaman_ms'] for o in tum]), np.array([o['mw'] for o in tum]))[0] if tum else math.nan
     mw_12 = [o['mw'] for o in olaylar_tr if ay_bit - 365.25 * GUN_MS <= o['zaman_ms'] < ay_bit]
     parcalar['gr'] = kartblok.gr_blogu(mw_12, ay, mc_tr)
-    parcalar['hucreler'] = kartblok.hucre_blogu(hucreler_tr, simdi, bas_ms, b_tr)
+    parcalar['hucreler'] = kartblok.hucre_blogu(hucreler_tr, simdi, bas_ms, b_tr, patlatma_ozeti)
+    parcalar['patlatma'] = patlatma_ozeti   # bayraklı hücreler yalnız burada (D1'de sütun yok); kartlarda ad verilmez
     kartveri.guncelle(yol, parcalar)
     if kume_tr:
         # Kart 19: uzun dönem olasılık; bağımsız olay = bu gecenin kümelemesinde ebeveyni olmayan (hesapla'nın `kume`si)
@@ -556,20 +574,21 @@ def ana(argv=None):
         t1 = time.monotonic()
         bas = max(_ms(BASLANGIC[ad]), meta[ad].get('bas', _ms(BASLANGIC[ad])))
         p, kume, hucreler, ozet = hesapla(ad, list(olaylar[ad].values()), durum['param'].get(ad), bas, simdi)
-        sonuc[ad] = (p, kume, hucreler, ozet['param_yaz'])
+        sonuc[ad] = (p, kume, hucreler, ozet['param_yaz'], ozet.get('patlatma'))
         if p is None:
             print(f"hesap {ad}: n={ozet['n']} — eşik yok, bu katalog için D1 yazımı yok")
             continue
         print(f"hesap {ad}: n={ozet['n']} Mc={ozet['mc']} d_f={p['d_f']} (ham {ozet['d_f_ham']}) "
               f"b={p['b']} (ham {ozet['b_ham']}) log_eta0={p['log_eta0']} (ham {ozet['log_eta0_ham']}) "
               f"bağlı={ozet['bagli']} hücre={ozet['hucre']} BH anlamlı={ozet['anlamli']} "
+              f"patlatma bayrak={len(ozet['patlatma']['hucreler'])}/{ozet['patlatma']['test']} ayıklanan={ozet['patlatma']['ayiklanan']} "
               f'({time.monotonic() - t1:.1f} s)')
 
     # kart verisi (D1'den bağımsız; hata gece işini düşürmez)
     try:
         bas_tr = max(_ms(BASLANGIC['tr']), meta['tr'].get('bas', _ms(BASLANGIC['tr'])))
         kv = kart_verisi(a.onbellek, list(olaylar['tr'].values()), sonuc['tr'][2], bas_tr, simdi, sonuc['tr'][1],
-                        (sonuc['tr'][0] or {}).get('b'))
+                        (sonuc['tr'][0] or {}).get('b'), patlatma_ozeti=sonuc['tr'][4])
         print(f"kart verisi: gr {'yok' if kv['gr'] is None else kv['gr']['ay']}, hücre {len(kv['hucreler']['hucreler'])}, "
               f"uzunDonem {'var' if 'uzunDonem' in kv else 'yok'}")
     except Exception as h:

@@ -46,9 +46,10 @@ def gr_blogu(mw, ay, mc):
     }
 
 
-def hucre_blogu(hucreler, simdi_ms, baslangic_ms, b_tr=None):
+def hucre_blogu(hucreler, simdi_ms, baslangic_ms, b_tr=None, patlatma=None):
     """gunluk.hesapla hücre satırlarından Türkiye (1°) hücreleri: hucre tablosundaki değerlerin aynısı.
-    b yalnız n ≥ 50 hücrede (hucre_istatistik zaten böyle üretir); λ bağımsız M ≥ Mc olay / yıl."""
+    b yalnız n ≥ 50 hücrede (hucre_istatistik zaten böyle üretir); λ bağımsız M ≥ Mc olay / yıl.
+    patlatma: gunluk.hesapla ozet['patlatma']; ayıklanan olay varsa 'patlatmaAyiklandi' (kartlar not düşer); bayraklı hücre 'patlatma': true."""
     liste = []
     for h in hucreler:
         if h.get('katalog') != 'tr':
@@ -58,7 +59,9 @@ def hucre_blogu(hucreler, simdi_ms, baslangic_ms, b_tr=None):
             'b': None if h['b'] is None else round(float(h['b']), 4),
             'sigma_b': None if h['sigma_b'] is None else round(float(h['sigma_b']), 4),
             'lambda': round(float(h['lambda']), 4),
+            **({'patlatma': True} if h.get('patlatma') else {}),
         })
     liste.sort(key=lambda s: s['anahtar'])
     # turkiyeB: λ haritası güvenilir b'si olmayan hücreyi Türkiye b'siyle M ≥ 4'e çevirir
-    return {'hesap': int(simdi_ms), 'baslangic': int(baslangic_ms), 'turkiyeB': None if b_tr is None else round(float(b_tr), 3), 'hucreler': liste}
+    return {'hesap': int(simdi_ms), 'baslangic': int(baslangic_ms), 'turkiyeB': None if b_tr is None else round(float(b_tr), 3),
+            'patlatmaAyiklandi': bool(patlatma and patlatma.get('ayiklanan')), 'hucreler': liste}

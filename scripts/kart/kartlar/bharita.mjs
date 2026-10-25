@@ -12,6 +12,7 @@ export const SIGMA_ESIK = 0.15;
 export const bSinif = siniflayici(B_SINIRLAR);
 const ETIKETLER = ['<0,6', '0,6–0,8', '0,8–1,0', '1,0–1,2', '1,2–1,4', '≥1,4'];
 const NOT = 'Betimleyici; tahmin değildir.';
+export const PATLATMA_NOTU = 'Olası patlatma kaynaklı küçük olaylar ayıklandı.';
 
 const gecerli = (h) => h.n >= 50 && Number.isFinite(h.b);
 const ortanca = (d) => { const s = [...d].sort((a, b) => a - b); return s.length % 2 ? s[(s.length - 1) / 2] : (s[s.length / 2 - 1] + s[s.length / 2]) / 2; };
@@ -25,7 +26,7 @@ export function bSvg(v) {
     etiket: (x) => sayiTr(x.b, 2),
     tarama: (x) => x.sigma_b > SIGMA_ESIK,
   });
-  const metin = `${NOT} Her hücre en az 50 olay; Mc hücre başına değişir.`;
+  const metin = `${NOT} Her hücre en az 50 olay; Mc hücre başına değişir.${v.patlatmaAyiklandi ? ' ' + PATLATMA_NOTU : ''}`;
   const bant = {
     sayi: dolu.length ? sayiTr(ortanca(dolu.map((x) => x.b)), 2) : '—', birim: 'ortanca b-değeri',
     baslik: 'Türkiye b-değeri haritası',
@@ -47,7 +48,7 @@ export function aciklama(v) {
     `Harita, Türkiye'nin (kıyıdan 30 km) 1° hücrelere bölünmüş kataloğunu (EMSC) gösterir; ortanca b ${sayiTr(ortanca(dolu.map((x) => x.b)), 2)}.`,
     `Yalnız Mc'nin üstünde en az 50 olayı olan hücreler çizilir (n ≥ 50; ${dolu.length} hücre), diğerleri boştur. Her hücrenin Mc değeri farklıdır (${mcAraligi(dolu, sayiTr)}). ` +
     `Çizgili ${belirsiz} hücrenin σ_b değeri 0,15'ten büyük: belirsiz.`,
-    `Betimleyici; tahmin değildir. Yöntem: Aki–Utsu b, Shi–Bolt σ_b; küçük örnekte b değişimlerini yanlış okumamak için eşikler Marzocchi vd. 2019'a göre.`,
+    `Betimleyici; tahmin değildir. Yöntem: Aki–Utsu b, Shi–Bolt σ_b; küçük örnekte b değişimlerini yanlış okumamak için eşikler Marzocchi vd. 2019'a göre.${v.patlatmaAyiklandi ? ' ' + PATLATMA_NOTU : ''}`,
   ].join('\n\n');
   return a.length > 1024 ? a.slice(0, 1020).replace(/<[^>]*$/, '') + '…' : a;
 }

@@ -5,6 +5,7 @@
 import { kart, sayiTr } from '../cekirdek.mjs';
 import { altBant, bantUyari, not, notUyari } from '../duzen.mjs';
 import { turkiyeHucreleri } from '../turkiye.mjs';
+import { PATLATMA_NOTU } from './bharita.mjs';
 import { hucreHaritasi, lejant, siniflayici, taze, yilAraligi } from './izgara.mjs';
 
 export const M_ORTAK = 4.0;
@@ -38,6 +39,7 @@ function hazirla(v) {
 /** → {svg, uyari, cizilen, metin, toplam}. */
 export function lambdaSvg(v) {
   const { dolu, toplam } = hazirla(v);
+  const NOT_K = v.patlatmaAyiklandi ? `Betimleyici; tahmin değildir. Mw ≥ 4'e çevrilmiş. ${PATLATMA_NOTU}` : NOT;
   const h = hucreHaritasi(dolu, { sinif: (x) => lambdaSinif(x.l4), etiket: (x) => lamYazi(x.l4) });
   const bant = {
     sayi: dolu.length ? lamYazi(toplam) : '—', birim: 'olay/yıl · Mw ≥ 4',
@@ -45,8 +47,8 @@ export function lambdaSvg(v) {
     satir1: `${yilAraligi(v)} · ${h.cizilen} hücre (1°, n ≥ 10) · Mw ≥ 4'e çevrilmiş`,
     satir2: 'Türkiye (kıyıdan 30 km) · kümelenme ayıklanmış',
   };
-  const svg = h.zemin + h.katman + lejant("olay / yıl, Mw ≥ 4'e çevrilmiş", ETIKETLER, { kutular: h.kutular }) + not(NOT) + altBant(bant);
-  return { svg, uyari: [...bantUyari(bant), ...notUyari(NOT)], cizilen: h.cizilen, metin: NOT, toplam, bant };
+  const svg = h.zemin + h.katman + lejant("olay / yıl, Mw ≥ 4'e çevrilmiş", ETIKETLER, { kutular: h.kutular }) + not(NOT_K) + altBant(bant);
+  return { svg, uyari: [...bantUyari(bant), ...notUyari(NOT_K)], cizilen: h.cizilen, metin: NOT_K, toplam, bant };
 }
 
 /** Telegram açıklaması (HTML, ≤ 1024). */
@@ -59,7 +61,7 @@ export function aciklama(v) {
     `Harita, Türkiye'de (kıyıdan 30 km) 1° hücrelerde yılda kaç bağımsız depremin (Mw ≥ 4) beklendiğini kayıttan gösterir. Artçılar ve kümelenmiş olaylar en yakın komşu yöntemiyle ayıklanmıştır. ` +
     `Her hücrenin tamlık büyüklüğü (Mc) farklı olduğundan sayılar Gutenberg–Richter ile ortak eşiğe (Mw ≥ 4) çevrilmiştir: Mc üstünde en az 50 olayı olan hücrelerde hücrenin kendi b'si, daha azında Türkiye b'si kullanılır. Mc üstünde en az 10 olayı olan ${dolu.length} hücre çizilir.` +
     (en ? ` Çizilen hücrelerin toplamı yılda ${lamYazi(toplam)} olay; en yoğun hücre ${la}–${la + 1}° K, ${lo}–${lo + 1}° D (yılda ${lamYazi(en.l4)}).` : ''),
-    'Betimleyici; tahmin değildir.',
+    'Betimleyici; tahmin değildir.' + (v.patlatmaAyiklandi ? ' ' + PATLATMA_NOTU : ''),
   ].join('\n\n');
   return a.length > 1024 ? a.slice(0, 1020).replace(/<[^>]*$/, '') + '…' : a;
 }
