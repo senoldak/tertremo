@@ -18,6 +18,7 @@ from hesap.mw import mw as mw_cevir, tur_duzelt
 
 EMSC_URL = 'https://www.seismicportal.eu/fdsnws/event/1/query'
 USGS_URL = 'https://earthquake.usgs.gov/fdsnws/event/1/query'
+EMSC_DEPREM = {'ke', 'se', 'fe'}  # EMSC evtype: bilinen / şüpheli / hissedilen deprem
 EMSC_KUTU = {'minlat': 33.5, 'maxlat': 44.5, 'minlon': 23.5, 'maxlon': 47}
 AJAN = 'tertremo (github.com/senoldak/tertremo)'
 LIMIT = 20000
@@ -119,6 +120,8 @@ def emsc_ayristir(govde, kati=False):
     sonuc = []
     for f in _coz(govde, kati):
         p = (f or {}).get('properties') or {}
+        if p.get('evtype') and p.get('evtype') not in EMSC_DEPREM:
+            continue  # patlama, maden, heyelan kodları (Worker src/kaynaklar/emsc.js ile aynı)
         k = ((f or {}).get('geometry') or {}).get('coordinates') or [None, None, None]
         derinlik = p.get('depth')
         if derinlik is None and len(k) > 2 and k[2] is not None:
@@ -136,6 +139,8 @@ def usgs_ayristir(govde, kati=False):
     sonuc = []
     for f in _coz(govde, kati):
         p = (f or {}).get('properties') or {}
+        if p.get('type') and p.get('type') != 'earthquake':
+            continue  # taş ocağı, patlama, nükleer deneme (Worker src/kaynaklar/usgs.js ile aynı)
         k = (f or {}).get('geometry', {}).get('coordinates')
         if not isinstance(k, list) or len(k) < 3:
             continue
