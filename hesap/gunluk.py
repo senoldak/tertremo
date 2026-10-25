@@ -25,7 +25,7 @@ from typing import Callable, Optional
 
 import numpy as np
 
-from hesap import d1
+from hesap import d1, etas
 from hesap import kartblok, kartveri, olasilik
 from hesap import katalog as kat
 from hesap.hucre import b_aki_utsu, hucre_anahtari, hucre_istatistik, mc_maxc
@@ -44,6 +44,7 @@ AG_PARAM = 2
 D_F_BANT = (1.0, 2.0)   # bant dışı d_f (küçük/kümeli örnek) → önceki ya da literatür 1,6
 D_F_VARSAYILAN = 1.6
 B_VARSAYILAN = 1.0
+B_BANT = (0.6, 1.5)    # bant dışı katalog b'si (Mc yanlış seçimi belirtisi) → önceki ya da 1,0
 TOLERANS = {'d_f': 0.05, 'b': 0.05, 'log_eta0': 0.1}
 KAYNAK = {'tr': 'emsc', 'dunya': 'usgs'}
 UTC = timezone.utc
@@ -365,6 +366,20 @@ def sabitle(onceki, yeni):
     return dict(yeni), True
 
 
+def katalog_mc(ad, z, m):
+    """Katalog geneli tamlık Mc'si (b, NN kümeleme ve hücre tabanı), MBS ile (etas.mc_mbs, aynı sabitler).
+    Türkiye: ETAS zinciriyle aynı eğitim penceresi (2018–2021, etas.mc_egitim): kayan bütün-katalog MBS'si her gece
+    4,0 ↔ 4,1 oynar ve b'yi tolerans dışına iter. Dünya: katalogun tamamı; USGS M ≥ 4,5 kesimli, n ~186 bin → σ_b çok küçük, ölçüt
+    b'nin yavaş kaymasını (mb → Mw, 1,16 → 1,0) reddeder ve MBS bulamaz → pratikte MAXC (4,7; b 1,14). MAXC yalnız MBS hiçbir aday bulamazsa
+    yedek: heterojen EMSC kutusunda MAXC (2,2) tamlığın altında kalır ve b'yi ≈ 0,68'e çeker (tamlıkta ≈ 1,1).
+    Dönüş: (Mc, 'MBS' | 'MAXC')."""
+    mbs = etas.mc_egitim(z, m)[1] if ad == 'tr' else etas.mc_mbs(m)
+    if math.isfinite(mbs):
+        return mbs, 'MBS'
+    print(f'UYARI {ad}: MBS Mc bulunamadı; MAXC yedeği kullanıldı')
+    return mc_maxc(m), 'MAXC'
+
+
 def hesapla(ad, olaylar, onceki_param, baslangic_ms, simdi):
     olaylar = sorted(olaylar, key=lambda o: o['zaman_ms'])
     ids = [o['id'] for o in olaylar]
@@ -373,7 +388,7 @@ def hesapla(ad, olaylar, onceki_param, baslangic_ms, simdi):
     bo = np.array([o['boylam'] for o in olaylar])
     m = np.array([o['mw'] for o in olaylar])
     d_f = korelasyon_boyutu(e, bo)
-    mc = mc_maxc(m)
+    mc, mc_kaynak = katalog_mc(ad, z, m)
     b, _ = b_aki_utsu(m, mc)
     d_f_ham, b_ham = d_f, b
     if not (D_F_BANT[0] <= d_f <= D_F_BANT[1]):
@@ -382,6 +397,9 @@ def hesapla(ad, olaylar, onceki_param, baslangic_ms, simdi):
     if not math.isfinite(b):
         b = (onceki_param or {}).get('b', B_VARSAYILAN)
         print(f'UYARI {ad}: b hesaplanamadı; {b} kullanıldı')
+    elif not (B_BANT[0] <= b <= B_BANT[1]):
+        b = (onceki_param or {}).get('b', B_VARSAYILAN)
+        print(f'UYARI {ad}: b {b_ham:.3f} [{B_BANT[0]}, {B_BANT[1]}] dışında (Mc {mc}, {mc_kaynak}); {b} kullanıldı')
     p, degisti = sabitle(onceki_param, {'d_f': round(d_f, 3), 'b': round(b, 3)})
     ebeveyn, log_eta = en_yakin_komsu(z, e, bo, m, p['d_f'], p['b'], ad)
     eta0 = esik(log_eta)
@@ -403,8 +421,8 @@ def hesapla(ad, olaylar, onceki_param, baslangic_ms, simdi):
     for i, cid in enumerate(ids):
         le = float(log_eta[i])
         kume[cid] = [ids[ebeveyn[i]] if bagli[i] else None, round(le, 3) if math.isfinite(le) else None]
-    hucreler = hucre_istatistik(z, e, bo, m, ~bagli, ad, baslangic_ms, simdi)
-    ozet = {'n': len(ids), 'd_f_ham': round(d_f_ham, 3), 'b_ham': round(b_ham, 3), 'mc': mc,
+    hucreler = hucre_istatistik(z, e, bo, m, ~bagli, ad, baslangic_ms, simdi, mc_katalog=mc)
+    ozet = {'n': len(ids), 'd_f_ham': round(d_f_ham, 3), 'b_ham': round(b_ham, 3), 'mc': mc, 'mc_kaynak': mc_kaynak,
             'log_eta0_ham': round(eta0, 3) if math.isfinite(eta0) else None, 'param_yaz': param_yaz,
             'bagli': int(bagli.sum()), 'hucre': len(hucreler),
             'anlamli': sum(1 for s in hucreler if s['bh_p'] is not None and s['bh_p'] < 0.05)}

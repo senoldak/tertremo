@@ -1,6 +1,7 @@
 import json
 
 import numpy as np
+import pytest
 
 from hesap import gunluk
 from hesap.gunluk import Is, kume_farki, olay_satiri, tavanla, tekillestir
@@ -302,3 +303,58 @@ def test_tavan_iki_modda_da_asilmaz():
         assert sum(i.agirlik for i in secilen) <= tavan
         assert len(secilen) - 1 == (tavan - 4) // 10 and kalan == 10_000 - (tavan - 4) // 10
         assert [i.zaman for i in secilen[1:4]] == [9999, 9998, 9997]  # en yeni önce
+
+
+def _heterojen_olaylar(tohum=5, b_alt=0.6):
+    """ML ~2'den eksik kayıtlı (görünür b ≈ 0,6), 4 ve üstü tam (b = 1,1): MAXC tamlığın altında kalır."""
+    r = np.random.default_rng(tohum)
+    kutu = lambda x: np.round(np.round(x / 0.1) * 0.1, 1)
+    ust = kutu(3.95 + r.exponential(1 / (1.1 * np.log(10)), 4000))
+    alt = kutu(1.95 + r.exponential(1 / (b_alt * np.log(10)), 14000))
+    m = np.concatenate([alt[alt < 3.95], ust])
+    r.shuffle(m)
+    t0 = 1_546_300_800_000.0   # 2019-01-01: ETAS eğitim penceresi (2018–2021) içinde
+    z = np.sort(r.uniform(t0, t0 + 900 * GUN_MS, m.size))
+    return [{'id': f'emsc:{i}', 'zaman_ms': float(z[i]), 'enlem': float(r.uniform(37, 40)),
+             'boylam': float(r.uniform(28, 33)), 'mw': float(m[i])} for i in range(m.size)]
+
+
+def test_katalog_mc_mbs_heterojen_katalogda_maxc_degil():
+    olaylar = _heterojen_olaylar()
+    m = np.array([o['mw'] for o in olaylar])
+    z = np.array([o['zaman_ms'] for o in olaylar])
+    mc, kaynak = gunluk.katalog_mc('tr', z, m)
+    assert kaynak == 'MBS' and mc >= 3.6
+    assert gunluk.mc_maxc(m) < 3.0
+    b_mbs, _ = gunluk.b_aki_utsu(m, mc)
+    b_maxc, _ = gunluk.b_aki_utsu(m, gunluk.mc_maxc(m))
+    assert b_mbs == pytest.approx(1.1, abs=0.15) and b_maxc < 0.8
+
+
+def test_hesapla_b_mbs_ve_hucre_tabani():
+    olaylar = _heterojen_olaylar()
+    simdi = 1_546_300_800_000.0 + 901 * GUN_MS
+    p, kume, hucreler, ozet = gunluk.hesapla('tr', olaylar, None, 1_546_300_800_000.0, simdi)
+    assert ozet['mc_kaynak'] == 'MBS' and ozet['mc'] >= 3.6
+    assert p['b'] == pytest.approx(1.1, abs=0.15)
+    assert all(h['mc'] >= ozet['mc'] - 1e-9 for h in hucreler)
+
+
+def test_hesapla_mbs_yoksa_maxc_yedegi(monkeypatch, capsys):
+    olaylar = _hesap_olaylari()
+    simdi = 1_700_000_000_000.0 + 301 * GUN_MS
+    monkeypatch.setattr(gunluk.etas, 'mc_mbs', lambda m, *a, **k: float('nan'))
+    p, _, _, ozet = gunluk.hesapla('tr', olaylar, None, 1_700_000_000_000.0, simdi)
+    assert ozet['mc_kaynak'] == 'MAXC' and p is not None
+    assert 'MAXC yedeği' in capsys.readouterr().out
+
+
+def test_b_bant_disi_onceki_ya_da_1_0(monkeypatch, capsys):
+    olaylar = _hesap_olaylari()
+    simdi = 1_700_000_000_000.0 + 301 * GUN_MS
+    monkeypatch.setattr(gunluk, 'b_aki_utsu', lambda m, mc, dm=0.1: (0.4, 0.01))
+    p, *_ = gunluk.hesapla('tr', olaylar, None, 1_700_000_000_000.0, simdi)
+    assert p['b'] == 1.0
+    assert 'dışında' in capsys.readouterr().out
+    p, *_ = gunluk.hesapla('tr', olaylar, {'d_f': 1.6, 'b': 0.93, 'log_eta0': -5.0}, 1_700_000_000_000.0, simdi)
+    assert p['b'] == 0.93

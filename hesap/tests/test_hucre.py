@@ -106,3 +106,38 @@ def test_lambda_ve_k7_ham_mw_ile():
     assert s['n'] == 62  # kutulu: 2,17 → 2,2 sayılır
     assert s['lambda'] == pytest.approx(61 / 2)
     assert s['k7'] == 1
+
+
+def _heterojen(n_alt=6000, n_ust=2500, tohum=5):
+    """EMSC benzeri: ML 2'den ama 4'ün altı eksik kayıtlı (b ≈ 0,6 görünür), 4 ve üstü tam (b = 1,1)."""
+    r = np.random.default_rng(tohum)
+    ust = np.round(np.round((3.95 + r.exponential(1 / (1.1 * np.log(10)), n_ust)) / 0.1) * 0.1, 1)
+    alt = np.round(np.round((1.95 + r.exponential(1 / (0.6 * np.log(10)), n_alt)) / 0.1) * 0.1, 1)
+    return np.concatenate([alt[alt < 3.95], ust])
+
+
+def test_hucre_mc_katalog_tabani():
+    m = _heterojen()
+    n = m.size
+    simdi = 1_700_000_000_000.0
+    bas = simdi - 3 * YIL_MS
+    zaman = np.linspace(bas, simdi - 10 * 86_400_000, n)
+    ortak = (zaman, np.full(n, 38.5), np.full(n, 27.5), m, np.ones(n, bool), 'tr', bas, simdi)
+    eski = hucre_istatistik(*ortak)[0]
+    yeni = hucre_istatistik(*ortak, mc_katalog=4.0)[0]
+    assert eski['mc'] < 3.0 and eski['b'] < 0.8            # MAXC tamlığın altında: b aşağı çekilir
+    assert yeni['mc'] == pytest.approx(4.0)                # Mc katalog tamlığının altına inmez
+    assert yeni['b'] == pytest.approx(1.1, abs=0.15)
+    assert yeni['n'] == int((m >= 4.0 - 1e-9).sum())
+    assert yeni['lambda'] == pytest.approx((m >= 4.0 - 1e-9).sum() / ((simdi - bas) / YIL_MS))
+
+
+def test_hucre_mc_katalog_maxc_buyukse_maxc():
+    # hücre MAXC'si katalog tamlığından yüksekse (hücre daha seyrek kayıtlı) hücre MAXC'si korunur
+    m = gr_ornek(4000, 1.0, 3.0)
+    n = m.size
+    simdi = 1_700_000_000_000.0
+    bas = simdi - YIL_MS
+    s = hucre_istatistik(np.linspace(bas, simdi - 86_400_000, n), np.full(n, 38.5), np.full(n, 27.5), m,
+                         np.ones(n, bool), 'tr', bas, simdi, mc_katalog=2.5)[0]
+    assert s['mc'] == pytest.approx(mc_maxc(m))

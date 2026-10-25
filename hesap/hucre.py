@@ -1,4 +1,4 @@
-# Hücre istatistikleri (spec §7.3): Mc (MAXC + 0,2), b (Aki–Utsu, kutu düzeltmeli), σ_b (Shi & Bolt 1982),
+# Hücre istatistikleri (spec §7.3): Mc (MAXC + 0,2; katalog tamlığının altına inmez), b (Aki–Utsu, kutu düzeltmeli), σ_b (Shi & Bolt 1982),
 # arka plan hızı λ (bağımsız M≥Mc olay / yıl), son 7 gün Poisson kuyruğu + Benjamini–Hochberg (q 0,05).
 import math
 
@@ -62,11 +62,13 @@ def bh_duzelt(p):
     return sonuc
 
 
-def hucre_istatistik(zaman, enlem, boylam, mw, bagimsiz, katalog, baslangic_ms, simdi_ms, dm=0.1):
+def hucre_istatistik(zaman, enlem, boylam, mw, bagimsiz, katalog, baslangic_ms, simdi_ms, dm=0.1, mc_katalog=None):
     """Her hücre için {katalog, anahtar, mc, b, sigma_b, n, lambda, k7, mu7, p, bh_p}.
 
     Mc ve b hücredeki bütün olaylarla (baslangic_ms sonrası); λ yalnız bağımsız (ebeveynsiz) olaylarla.
     k7: son 7 günde bağımsız M≥Mc; p = P(X ≥ k7 | Poisson(λ·7/365)); bh_p yalnız λ > 0 hücreler arasında.
+    mc_katalog (katalog genelinin MBS tamlığı) verilirse hücre Mc'si max(MAXC + 0,2, mc_katalog): MAXC heterojen
+    katalogda (EMSC: ML ~2'den, mb/Mw üstte) gerçek tamlığın altında kalır ve b'yi aşağı çeker.
     """
     zaman = np.asarray(zaman, float)
     secim = zaman >= baslangic_ms
@@ -85,6 +87,8 @@ def hucre_istatistik(zaman, enlem, boylam, mw, bagimsiz, katalog, baslangic_ms, 
         idx = sira[sinirlar[i]:sinirlar[i + 1]]
         m = mw[idx]
         mc = mc_maxc(m, dm)
+        if mc_katalog is not None and math.isfinite(mc_katalog):
+            mc = round(max(mc, float(mc_katalog)), 6)
         ustu = kutula(m, dm) >= mc - EPS
         n = int(ustu.sum())
         b = sigma = None
