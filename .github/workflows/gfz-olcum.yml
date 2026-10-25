@@ -1,0 +1,33 @@
+# Tek seferlik: GFZ Data Services (DOI 10.5880/GFZ.4.2.2024.001, CC BY 4.0) katalog dosyalarını indirir. İş bitince silinecek.
+name: gfz-olcum
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  indir:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: İndir
+        run: |
+          mkdir -p gfz && cd gfz
+          set +e
+          echo "== DOI çözümü"; curl -sSL -m 60 -o landing.html -w '%{http_code} %{url_effective}\n' https://doi.org/10.5880/GFZ.4.2.2024.001
+          echo "== doğrudan indirme"
+          curl -sSL -m 600 -D headers.txt -o gfz-indirme.bin -w '%{http_code} %{size_download} %{url_effective}\n' "https://datapub.gfz.de/download/10.5880.GFZ.4.2.2024.001-CEonCW"
+          head -20 headers.txt
+          file gfz-indirme.bin; ls -la
+          echo "== landing içindeki bağlantılar"
+          grep -oE '(https?:)?//[^"'"'"' )]*(datapub|download|\.zip|\.csv|\.txt|\.dat)[^"'"'"' )]*' landing.html | sort -u | head -30
+          echo "== dataservices API denemeleri"
+          for u in "https://dataservices.gfz.de/api/dois/10.5880/gfz.4.2.2024.001" "https://dataservices.gfz.de/api/resources/10.5880/gfz.4.2.2024.001" "https://dataservices.gfz.de/10.5880/gfz.4.2.2024.001"; do
+            curl -sSL -m 60 -o /dev/null -w "$u -> %{http_code} %{content_type}\n" "$u"
+          done
+          exit 0
+      - name: Yükle
+        uses: actions/upload-artifact@v4
+        with:
+          name: gfz
+          path: gfz/
+          retention-days: 7
