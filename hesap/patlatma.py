@@ -9,6 +9,9 @@
 # olaylardan ölçülür), böylece günlük tespit ve kayıt eğilimleri sabit zeminde kalır.
 # Test: hücrede n ≥ 30 küçük (M < 3,5) olay; tek yönlü binom P(X ≥ k | n, p0); hücreler arası Benjamini–Hochberg; q < 0,01;
 # ek koruma: pay − p0 ≥ 0,10 (yalnız anlamlılık, 1°'lik hücrede binlerce olayda ufak sapmayı bile yakalar).
+# Artçı koruması (0977680 sonrası): test yalnız BAĞIMSIZ (en yakın komşu kümelemesinde ebeveynsiz) küçük olaylarla yapılır;
+# ek olarak hücrenin test olaylarının %50'sinden fazlası tek bir 30 günlük pencerede toplanıyorsa (dizi) hücre bayraklanmaz.
+# Gerekçe: Kahramanmaraş 2023 dizisinin hücreleri (36_37, 36_38) artçı kümelenmesiyle gün/hafta içi payı sapmış görünüyordu.
 # Küçük olay seçimi: patlatmalar küçüktür (M ≲ 3,5); büyük olaylar test girdisine ve düşürmeye girmez (gerçek deprem riskine karşı tutucu).
 import numpy as np
 from scipy.stats import binom
@@ -19,6 +22,8 @@ TSI_MS = 3 * 3600 * 1000
 GUN_MS = 86_400_000
 M_UST = 3.5
 N_EN_AZ = 30
+DIZI_PENCERE_MS = 30 * GUN_MS  # dizi koruması penceresi
+DIZI_PAY_EN_COK = 0.50          # tek pencerede bu payı aşan hücre bayraklanmaz
 Q_ESIK = 0.01
 FAZLA_EN_AZ = 0.10  # etki büyüklüğü tabanı: hücre payı p0'dan en az 0,10 yüksek olmalı (büyük n'de anlamlı ama önemsiz sapmaları, örn. artçı dizisi hücresini, bayraklamaz)
 PENCERE = (8, 17)   # [08:00, 17:00) yerel
@@ -34,10 +39,23 @@ def pencerede(zaman_ms):
     return (saat >= PENCERE[0]) & (saat < PENCERE[1]) & (hafta_gunu < HAFTA_ICI)
 
 
-def bayrakli(zaman, enlem, boylam, mw, katalog='tr', m_ust=M_UST, n_en_az=N_EN_AZ, q_esik=Q_ESIK, fazla_en_az=FAZLA_EN_AZ):
-    """→ (bayrak: {anahtar: {n, k, pay, q}}, p0, test_edilen_hucre_sayisi). Girdi: baslangic_ms sonrası bütün katalog."""
+def dizi_payi(zaman_ms, pencere_ms=DIZI_PENCERE_MS):
+    """Olayların en kalabalık tek `pencere_ms` penceresine (kayan, [t, t+pencere)) düşen payı."""
+    t = np.sort(np.asarray(zaman_ms, float))
+    if t.size == 0:
+        return 0.0
+    return float((np.searchsorted(t, t + pencere_ms, 'left') - np.arange(t.size)).max() / t.size)
+
+
+def bayrakli(zaman, enlem, boylam, mw, katalog='tr', m_ust=M_UST, n_en_az=N_EN_AZ, q_esik=Q_ESIK, fazla_en_az=FAZLA_EN_AZ,
+             bagimsiz=None, dizi_en_cok=DIZI_PAY_EN_COK):
+    """→ (bayrak: {anahtar: {n, k, pay, q}}, p0, test_edilen_hucre_sayisi). Girdi: baslangic_ms sonrası bütün katalog.
+    bagimsiz: girdiyle aynı uzunlukta bool (NN'de ebeveynsiz olaylar); verilirse test yalnız onlarla yapılır.
+    dizi_en_cok: hücrenin test olaylarının tek 30 günlük pencerede bu paydan fazlası varsa bayraklanmaz (None: kapalı)."""
     zaman, enlem, boylam, mw = (np.asarray(x, float) for x in (zaman, enlem, boylam, mw))
     kucuk = mw < m_ust
+    if bagimsiz is not None:
+        kucuk = kucuk & np.asarray(bagimsiz, bool)
     if not kucuk.any():
         return {}, float('nan'), 0
     ic = pencerede(zaman[kucuk])
@@ -54,8 +72,10 @@ def bayrakli(zaman, enlem, boylam, mw, katalog='tr', m_ust=M_UST, n_en_az=N_EN_A
     if not satirlar:
         return {}, p0, 0
     q = bh_duzelt([s[3] for s in satirlar])
+    zk = zaman[kucuk]
     bayrak = {a: {'n': n, 'k': k, 'pay': round(k / n, 3), 'q': float(qq)}
-              for (a, n, k, _), qq in zip(satirlar, q) if qq < q_esik and k / n - p0 >= fazla_en_az}
+              for (a, n, k, _), qq in zip(satirlar, q) if qq < q_esik and k / n - p0 >= fazla_en_az
+              and (dizi_en_cok is None or dizi_payi(zk[anahtar == a]) <= dizi_en_cok)}
     return bayrak, p0, len(satirlar)
 
 

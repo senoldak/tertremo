@@ -380,6 +380,25 @@ def katalog_mc(ad, z, m):
     return mc_maxc(m), 'MAXC'
 
 
+def bagimsiz_maske(ad, z, e, bo, m, mc, onceki_param):
+    """Patlatma testi için ön kümeleme: bütün katalogda NN, ebeveynsiz (log η ≥ eşik) olaylar → bool dizi.
+    Parametreler önceki geceden (d_f, b, log_eta0) varsa onlar; yoksa bu katalogdan kestirilir. Eşik kurulamazsa None (test bütün küçük olaylarla)."""
+    op = onceki_param or {}
+    if all(k in op for k in ('d_f', 'b', 'log_eta0')):
+        d_f, b, le0 = op['d_f'], op['b'], op['log_eta0']
+        _, log_eta = en_yakin_komsu(z, e, bo, m, d_f, b, ad)
+    else:
+        d_f = korelasyon_boyutu(e, bo)
+        d_f = d_f if D_F_BANT[0] <= d_f <= D_F_BANT[1] else op.get('d_f', D_F_VARSAYILAN)
+        b, _ = b_aki_utsu(m, mc)
+        b = b if math.isfinite(b) and B_BANT[0] <= b <= B_BANT[1] else op.get('b', B_VARSAYILAN)
+        _, log_eta = en_yakin_komsu(z, e, bo, m, d_f, b, ad)
+        le0 = esik(log_eta)
+        if not math.isfinite(le0):
+            return None
+    return ~(log_eta < le0)
+
+
 def hesapla(ad, olaylar, onceki_param, baslangic_ms, simdi):
     olaylar = sorted(olaylar, key=lambda o: o['zaman_ms'])
     ids = [o['id'] for o in olaylar]
@@ -392,7 +411,9 @@ def hesapla(ad, olaylar, onceki_param, baslangic_ms, simdi):
     bayrak, p0, n_test = ({}, math.nan, 0)
     if ad == 'tr':
         son = z >= baslangic_ms
-        bayrak, p0, n_test = patlatma.bayrakli(z[son], e[son], bo[son], m[son], ad)
+        bag = bagimsiz_maske(ad, z, e, bo, m, mc, onceki_param)   # artçı koruması: test bağımsız olaylarla (hesap/patlatma.py)
+        bayrak, p0, n_test = patlatma.bayrakli(z[son], e[son], bo[son], m[son], ad,
+                                               bagimsiz=None if bag is None else bag[son])
     at = patlatma.ayiklama_maskesi(z, e, bo, m, bayrak, ad)
     ids_tum = ids
     if at.any():
