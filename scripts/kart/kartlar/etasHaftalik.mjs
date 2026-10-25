@@ -15,7 +15,7 @@ const ETIKET = 'deneysel — doğrulama sürüyor';
 const ETIKET_RED = 'deneysel — doğrulamadan geçemedi';
 // Doğrulama kesin olarak geçmediyse (gecti === false) etiket bunu söyler; geçmediği sürece kart kanala gitmez.
 const etiketMetni = (e) => (e?.kapi?.gecti === false ? ETIKET_RED : ETIKET);
-const NOT = 'Olasılık tahminidir; deprem tahmini değildir. ETAS (Mizrahi vd. 2021) · Mw ≥ 6 değeri doğrulanmamış';
+const NOT = 'Olasılık hesabıdır; deprem önceden bilinemez. ETAS (Mizrahi vd. 2021) · Mw ≥ 6 değeri doğrulanmamış';
 // Sıralı indigo tonları (açıktan koyuya); sınırlar P(≥1 Mw ≥ 5, 7 gün)
 const SINIFLAR = [
   { ust: 0.01, renk: '#e4e2f6', ad: '<%1' },
@@ -72,7 +72,7 @@ const sinavSatiri = (e) => (e?.ileri ? `İleriye dönük sınavda: ${e.ileri.haf
 export function notMetni(e) {
   const dogrulama = yayin(e) ? 'doğrulamadan geçti' : e.kapi?.gecti === false ? 'doğrulamadan geçemedi' : 'doğrulama sürüyor';
   const sinav = sinavSatiri(e);
-  return sinav ? `Olasılık tahminidir; deprem tahmini değildir. ${sinav} · ${dogrulama}` : `${NOT} · ${dogrulama}`;
+  return sinav ? `Olasılık hesabıdır; deprem önceden bilinemez. ${sinav} · ${dogrulama}` : `${NOT} · ${dogrulama}`;
 }
 
 /** Telegram açıklaması (HTML, ≤ 1024). */

@@ -128,10 +128,10 @@ def test_blok_sema(atayici):
         assert len(b['olasilik']['10']['6']) == 3 and set(b['olasilik']['10']) == {'6', '7'}
     # Mw ≥ 6–7: uzun USGS kaydından doğrudan sayım (bölge n'i bu kayıttan)
     uk = blok['uzunKatalog']
-    assert uk['yontem'] == 'gardner-knopoff' and uk['bas6'] == 1930 and uk['bas7'] == 1900
+    assert uk['yontem'] == 'gardner-knopoff' and uk['bas6'] == 1964 and uk['bas7'] == 1918
     assert sum(b['n'] for b in blok['bolgeler']) == blok['turkiye']['n6'] == uk['n6']
-    ol = uk['olaylar']                     # çizilen bağımsız merkez üsleri: Mw ≥ 6 (1930–) ∪ Mw ≥ 7 (1900–)
-    assert sum(1 for o in ol if o[2] >= 6 - 1e-9 and o[3] >= 1930) == uk['n6'] and sum(1 for o in ol if o[2] >= 7 - 1e-9) == uk['n7']
+    ol = uk['olaylar']                     # çizilen bağımsız merkez üsleri: Mw ≥ 6 (1964–) ∪ Mw ≥ 7 (1918–)
+    assert sum(1 for o in ol if o[2] >= 6 - 1e-9 and o[3] >= 1964) == uk['n6'] and sum(1 for o in ol if o[2] >= 7 - 1e-9) == uk['n7']
     assert all(len(o) == 4 for o in ol)
     p7 = blok['turkiye']['olasilik']['10']['7']
     assert 0.6 < p7[0] < 0.9 and p7[1] < p7[0] < p7[2]
@@ -213,8 +213,8 @@ def test_uzun_katalog_sayim_basit_sayimla_tutarli(atayici):
     lam7 = b['n7'] / b['yil7']
     assert r['turkiye'][1][7.0][0] == pytest.approx(1 - math.exp(-lam7), rel=1e-3)
     assert r['turkiye'][10][7.0][0] == pytest.approx(1 - math.exp(-10 * lam7), rel=1e-3)
-    assert 0.10 < lam7 < 0.22           # 1900'den beri Türkiye (+30 km) ≈ 15–25 bağımsız Mw ≥ 7
-    assert 0.5 < r['turkiye'][1][6.0][0] < 0.7
+    assert 0.10 < lam7 < 0.22           # 1918'den beri Türkiye (+30 km) ≈ 15–25 bağımsız Mw ≥ 7
+    assert 0.4 < r['turkiye'][1][6.0][0] < 0.7
     o, a, u = r['turkiye'][10][7.0]
     assert a >= 0 and o >= a and u >= o and u - a > 0
 

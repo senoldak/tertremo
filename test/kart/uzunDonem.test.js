@@ -14,8 +14,8 @@ const tablo = (k) => ({
 const OLAYLAR = [[40.75, 29.86, 7.6, 1999], [40.76, 31.16, 7.2, 1999], [37.23, 37.01, 7.8, 2023], [38.7, 26.5, 6.1, 1955], [39.2, 28.2, 6.0, 2025], [36.9, 30.7, 6.4, 1957]];
 const blok = (ek = {}) => ({
   surum: 'uzun-1', hesap: simdi - 3600e3, baslangic: Date.UTC(2018, 0, 1), bitis: simdi, yil: 8.8, mc: 3.0, kumeleme: 'en-yakin-komsu', bootstrap: 1000,
-  uzunKatalog: { yontem: 'gardner-knopoff', kaynak: 'USGS FDSN', bas6: 1930, bas7: 1900, n6: 72, n7: 20, olaylar: OLAYLAR },
-  turkiye: { n: 657, n6: 72, n7: 20, b: 1.13, olasilik: tablo(1.6) },
+  uzunKatalog: { yontem: 'gardner-knopoff', kaynak: 'USGS FDSN', bas6: 1964, bas7: 1918, n6: 43, n7: 17, olaylar: OLAYLAR },
+  turkiye: { n: 657, n6: 43, n7: 17, b: 1.13, olasilik: tablo(1.6) },
   bolgeler: [['Marmara', 0.9], ['Ege', 1.4], ['Akdeniz', 0.6], ['İç Anadolu', 0.3], ['Karadeniz', 0.15], ['Doğu Anadolu', 1.7]]
     .map(([ad, k]) => ({ ad, n: 12, olasilik: tablo(k) })),
   ...ek,
@@ -47,17 +47,17 @@ describe('uzun dönem kartı', () => {
     expect(r.bant.sayi).toBe('%11');
     expect(r.bant.birim).toBe('1 yılda Mw ≥ 6, Türkiye');
     expect(r.bant.satir1).toContain('%6–%16');
-    expect(r.bant.satir1).toContain('USGS 1930–2026, 72 olay');
+    expect(r.bant.satir1).toContain('USGS 1964–2026, 43 olay');
     expect(r.bant.satir2).toBe('Kümelenmiş olaylar ayıklanmış (Gardner–Knopoff)');
   });
   it('not: tahmin değildir + zamandan bağımsız Poisson; bölge adı/yüzdesi ne kartta ne açıklamada; yasak sözcük ve kırmızı yok', () => {
     const r = uzunDonemSvg(blok());
-    expect(r.metin).toBe('Olasılık tahminidir; deprem tahmini değildir. Zamandan bağımsız Poisson modeli.');
+    expect(r.metin).toBe('Olasılık hesabıdır; depremin yeri ve zamanı önceden bilinemez. Zamandan bağımsız Poisson modeli.');
     const a = aciklama(blok());
     expect(a.length).toBeLessThanOrEqual(1024);
-    expect(a).toContain('Olasılık tahminidir; deprem tahmini değildir.');
+    expect(a).toContain('Olasılık hesabıdır; depremin yeri ve zamanı önceden bilinemez.');
     expect(a).toContain('Mc 3,0');
-    expect(KATALOG_NOTU).toBe('Mw ≥ 6–7: USGS 1930/1900– kataloğu; Mw 5: EMSC 2018–');
+    expect(KATALOG_NOTU).toBe('Mw ≥ 6–7: USGS 1964/1918– kataloğu; Mw 5: EMSC 2018–');
     expect(a).toContain(KATALOG_NOTU);
     expect(a).toContain('Gardner–Knopoff');
     expect(a).toContain('en yakın komşu');

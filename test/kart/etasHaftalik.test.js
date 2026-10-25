@@ -121,7 +121,7 @@ describe('kart', () => {
     const svg = etasSvg(v.etas);
     expect(svg).toContain('data-rol="not"');
     expect(notMetni(v.etas)).toContain('İleriye dönük sınavda: 7/52 hafta');
-    expect(notMetni(v.etas)).toContain('deprem tahmini değildir');
+    expect(notMetni(v.etas)).toContain('deprem önceden bilinemez');
     expect(aciklama(v)).toContain('İleriye dönük sınavda: 7/52 hafta');
     expect(aciklama(v)).toContain('github.com/senoldak/tertremo/blob/main/docs/etas-on-kayit.md');
     expect(aciklama(v).length).toBeLessThanOrEqual(1024);

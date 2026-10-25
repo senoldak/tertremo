@@ -143,8 +143,8 @@ const olasTablo = (k) => {
 };
 const uzunBlok = {
   surum: 'uzun-1', hesap: Date.UTC(2026, 10, 1, 5), baslangic: Date.UTC(2018, 0, 1), bitis: Date.UTC(2026, 10, 1, 6), yil: 8.8, mc: 3.0, kumeleme: 'en-yakin-komsu', bootstrap: 1000,
-  uzunKatalog: { yontem: 'gardner-knopoff', kaynak: 'USGS FDSN', bas6: 1930, bas7: 1900, n6: 72, n7: 20 },
-  turkiye: { n: 657, n6: 72, n7: 20, b: 1.13, olasilik: olasTablo(1.6) },
+  uzunKatalog: { yontem: 'gardner-knopoff', kaynak: 'USGS FDSN', bas6: 1964, bas7: 1918, n6: 43, n7: 17 },
+  turkiye: { n: 657, n6: 43, n7: 17, b: 1.13, olasilik: olasTablo(1.6) },
   bolgeler: [['Marmara', 0.9], ['Ege', 1.4], ['Akdeniz', 0.6], ['İç Anadolu', 0.3], ['Karadeniz', 0.15], ['Doğu Anadolu', 1.7]]
     .map(([ad, k]) => ({ ad, n: 200, b: 1.0, kendiB: true, olasilik: olasTablo(k) })),
 };

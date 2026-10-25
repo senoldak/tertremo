@@ -1,5 +1,5 @@
 // Kart 19 — Uzun dönem deprem olasılığı (aylık). Veri: hesap/.onbellek/kart-veri.json → uzunDonem (hesap/olasilik.py):
-// Mw ≥ 6–7: USGS 1930/1900– uzun kayıt, Gardner–Knopoff ile ayıklanmış doğrudan sayım; Mw 5: EMSC 2018– (en yakın komşu, G–R uzatma);
+// Mw ≥ 6–7: USGS 1964/1918– uzun kayıt, Gardner–Knopoff ile ayıklanmış doğrudan sayım; Mw 5: EMSC 2018– (en yakın komşu, G–R uzatma);
 // zamandan bağımsız Poisson, bootstrap %10–%90. KAMUYA AÇIK KART bölge bazında yüzde GÖSTERMEZ (belirli bir yer için tahmin/alarm
 // okunabilir): harita gerçekleşmiş bağımsız Mw ≥ 6 merkez üslerini çizer. Bölge değerleri yalnız kart-veri.json'da (uzunDonem.bolgeler).
 // Sağda Türkiye geneli 1/10/50 yıl × Mw ≥ 5/6/7 tablosu. Deprem tahmini değildir.
@@ -10,10 +10,10 @@ import { taze } from './izgara.mjs';
 import { yuzde } from './etasHaftalik.mjs';
 
 /** Panel notu (16 px satırlar): hangi satır hangi katalogtan. */
-export const KATALOG_SATIR = ['Mw ≥ 6–7: USGS 1930/1900– kataloğu;', 'Mw 5: EMSC 2018–. Kümelenmiş olaylar', 'ayıklanmış (Gardner–Knopoff / yakın komşu).'];
-export const KATALOG_NOTU = 'Mw ≥ 6–7: USGS 1930/1900– kataloğu; Mw 5: EMSC 2018–';
+export const KATALOG_SATIR = ['Mw ≥ 6–7: USGS 1964/1918– kataloğu;', 'Mw 5: EMSC 2018–. Kümelenmiş olaylar', 'ayıklanmış (Gardner–Knopoff / yakın komşu).'];
+export const KATALOG_NOTU = 'Mw ≥ 6–7: USGS 1964/1918– kataloğu; Mw 5: EMSC 2018–';
 export const TURKIYE_AD = 'Türkiye (kıyıdan 30 km dahil)';
-const NOT = 'Olasılık tahminidir; deprem tahmini değildir. Zamandan bağımsız Poisson modeli.';
+const NOT = 'Olasılık hesabıdır; depremin yeri ve zamanı önceden bilinemez. Zamandan bağımsız Poisson modeli.';
 const T_LISTE = [1, 10, 50];
 const M_LISTE = [5, 6, 7];
 const rol = (ad, ic) => `<g data-rol="${ad}">${ic}</g>`;
@@ -44,7 +44,7 @@ function lejant(b) {
   return rol('lejant', `<rect x="24" y="460" width="${g.toFixed(1)}" height="68" rx="8" fill="${RENK.kagit}" fill-opacity="0.95"/>` +
     yazi(LEJANT_BASLIK(b), 38, 484, 17, RENK.murekkep) +
     `<circle cx="48" cy="509" r="5.5" fill="${RENK.indigo}" fill-opacity="0.65"/>` + yazi('Mw ≥ 6', 62, 515, 16, RENK.gri) +
-    `<circle cx="160" cy="509" r="11" fill="${RENK.indigo}" fill-opacity="0.2" stroke="${RENK.indigo}" stroke-width="3"/>` + yazi(`Mw ≥ 7 (1900–)`, 180, 515, 16, RENK.gri));
+    `<circle cx="160" cy="509" r="11" fill="${RENK.indigo}" fill-opacity="0.2" stroke="${RENK.indigo}" stroke-width="3"/>` + yazi(`Mw ≥ 7 (1918–)`, 180, 515, 16, RENK.gri));
 }
 
 /** → {svg, uyari, bant, metin, tablo}: tablo = Türkiye 1/10/50 yıl satırları × Mw ≥ 5/6/7 (yüzde metni). */
@@ -87,8 +87,8 @@ export function aciklama(b) {
     '<b>Uzun dönem deprem olasılığı</b>',
     `${TURKIYE_AD}: kayıttan hesaplanan hıza göre, belirtilen sürede en az bir deprem olma olasılığı:\n${satir(1)}\n${satir(10)}\n${satir(50)}`,
     `Harita, ${BAS_YIL(b)}–${SON_YIL(b)} arasında kaydedilen bağımsız Mw ≥ 6 depremlerin merkez üslerini gösterir (büyük halka: Mw ≥ 7); geçmiş kaydı gösterir, gelecekteki yer ve zamanı göstermez.`,
-    `${KATALOG_NOTU}. Kümelenme ayıklandı: Mw ≥ 6–7 Gardner–Knopoff (Türkiye'de ${b.turkiye.n6} Mw ≥ 6, ${b.turkiye.n7} Mw ≥ 7 olay), Mw 5 en yakın komşu (Mc ${sayiTr(b.mc, 1)}, b ${sayiTr(t.b, 2)}). Zamandan bağımsız Poisson; aralık %10–%90 (yeniden örnekleme).`,
-    'Olasılık tahminidir; deprem tahmini değildir.',
+    `${KATALOG_NOTU}. Kümelenme ayıklandı: Mw ≥ 6–7 bağımsız ana depremler (Gardner–Knopoff; Türkiye'de ${b.turkiye.n6} Mw ≥ 6, ${b.turkiye.n7} Mw ≥ 7 olay; tamlık: Michael 2014), Mw 5 en yakın komşu (Mc ${sayiTr(b.mc, 1)}, b ${sayiTr(t.b, 2)}). Zamandan bağımsız Poisson; aralık %10–%90 (yeniden örnekleme).`,
+    'Olasılık hesabıdır; depremin yeri ve zamanı önceden bilinemez.',
   ].join('\n\n');
   return a.length > 1024 ? a.slice(0, 1020).replace(/<[^>]*$/, '') + '…' : a;
 }

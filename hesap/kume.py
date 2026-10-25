@@ -1,6 +1,6 @@
 # En yakın komşu kümeleme (Zaliapin & Ben-Zion; Zaliapin 2008 PRL, arXiv:0712.1303) — src/kume.js ile aynı:
 # log η = log10 τ + d_f·log10 r − b·m_ebeveyn; τ YIL, r haversine km (R 6371, alt sınır 0,1 km); ebeveyn kesin
-# olarak daha önce ve en çok 365 gün önce. Aday kümesi Worker'ın adayGetir'i ile aynı kurallar: olayın 1° hücresi
+# olarak daha önce ve en çok 10 yıl (3652 gün) önce (Worker'daki canlı kume.js 365 gün: D1 okuma maliyeti). Aday kümesi Worker'ın adayGetir'i ile aynı kurallar: olayın 1° hücresi
 # ve 8 komşusu (mw ≥ mwAlt, en yeni 1000) + ±kutu içinde büyük olaylar (mw ≥ buyuk), toplam en çok 1000.
 import math
 
@@ -11,7 +11,7 @@ from sklearn.mixture import GaussianMixture
 YIL_MS = 365.25 * 24 * 3600 * 1000
 GUN_MS = 24 * 3600 * 1000
 MIN_R_KM = 0.1
-PENCERE_GUN = 365
+PENCERE_GUN = 3652  # 10 yıl: büyük ana şokların (ör. 2023 Kahramanmaraş) 1 yıldan sonraki Omori kuyruğu da bağlı sayılsın
 LIMIT = 1000
 ESIK_EN_AZ = 20  # esik(): daha az sonlu log η ile karışım kurulmaz (nan)
 R_DUNYA = 6371.0

@@ -1,8 +1,8 @@
 # Kart 19 — uzun dönem deprem olasılığı (zamandan bağımsız Poisson; deprem tahmini değildir).
 # - λ(M ≥ Mc): kümelenmesi ayrılmış (en yakın komşu, hesap/kume.py) olay sayısı / gözlem yılı.
 # - G–R uzatma: λ(M) = λ(Mc)·10^(−b(M−Mc)); P(T yılda ≥ 1 olay) = 1 − exp(−λ(M)·T).
-# - Mw ≥ 6 ve Mw ≥ 7: UZUN USGS kaydı (data/uzun-katalog.json, 1900–, Gardner–Knopoff ile ayıklanmış; λ = olay/yıl, Mw ≥ 6 için 1930'dan,
-#   Mw ≥ 7 için 1900'den; Türkiye ve bölgeler için doğrudan sayım). EMSC 2018– yalnız Mw ≥ 5 satırı ve b için (G–R uzatma).
+# - Mw ≥ 6 ve Mw ≥ 7: UZUN USGS kaydı (data/uzun-katalog.json, 1900–, Gardner–Knopoff ile ayıklanmış; λ = olay/yıl, Mw ≥ 6 için 1964'ten,
+#   Mw ≥ 7 için 1918'den (tamlık: Michael 2014, ISC-GEM, doi 10.1785/0120130227 — 1900–17 Mc 7,7; 1918–39 7,0; 1964–75 6,0); bağımsız ana depremler (Gardner–Knopoff); Türkiye ve bölgeler için doğrudan sayım). EMSC 2018– yalnız Mw ≥ 5 satırı ve b için (G–R uzatma).
 # - Aralık: Poisson bootstrap (her olaya Poisson(1) ağırlık = olay sayısı da değişir), 1.000 çekim; b ve λ HER çekimde yeniden
 #   hesaplanır (Türkiye ve her bölge için); orta = veri üzerindeki nokta değeri, aralık = %10 / %90. Bölgelerin ve Türkiye'nin
 #   çekimi ortaktır: Türkiye kataloğu çekim başına bir kez örneklenir, hepsi ondan türer (kendi b'si olmayan bölge o çekimin Türkiye b'sini alır).
@@ -38,8 +38,8 @@ UZUN_ONBELLEK = os.path.join(os.path.dirname(__file__), '.onbellek', 'uzun-katal
 USGS_ADRES = 'https://earthquake.usgs.gov/fdsnws/event/1/query'
 TR_KUTU = {'enAz': 35.5, 'enCok': 42.5, 'boyAz': 25.5, 'boyCok': 45.0}   # scripts/kart/veri-hazirla.mjs ile aynı
 TSI_MS = 3 * 3600_000
-M6_BAS = 1930      # Mw ≥ 6 tamlığı: 1930'dan (1900'e kadar iyimser)
-M7_BAS = 1900      # Mw ≥ 7 tamlığı: 1900'den
+M6_BAS = 1964      # Mw ≥ 6 tamlığı: 1964'ten (Michael 2014, ISC-GEM sığ olaylar: 1964–75 Mc 6,0; öncesi tam değil)
+M7_BAS = 1918      # Mw ≥ 7 tamlığı: 1918'den (Michael 2014: 1918–39 Mc 7,0; 1900–17 Mc 7,7)
 BOLGE_DOSYA = os.path.join(os.path.dirname(__file__), '..', 'data', 'bolgeler.json')
 IL_DOSYA = os.path.join(os.path.dirname(__file__), '..', 'data', 'harita', 'iller.json')
 LOG10E = math.log10(math.e)
@@ -304,7 +304,7 @@ def gk_ayikla(z, e, bo, m):
 
 def _sayim_blogu(uk, atayici, simdi_ms, T=T_LISTE, n_boot=BOOTSTRAP, tohum=0):
     """Uzun katalogdan Türkiye (bölgelerin birleşimi) ve bölge olasılıkları: {'turkiye': {T: {M: (o, a, u)}}, 'bolgeler': {ad: …}, 'bilgi'}.
-    λ(Mw ≥ 6) = 1930'dan, λ(Mw ≥ 7) = 1900'den bu yana Gardner–Knopoff ile ayıklanmış olay / yıl; aralık: olaylar üstünde
+    λ(Mw ≥ 6) = 1964'ten, λ(Mw ≥ 7) = 1918'den bu yana Gardner–Knopoff ile ayıklanmış olay / yıl; aralık: olaylar üstünde
     Poisson bootstrap (Türkiye ve bölgeler ortak çekim), %10 / %90."""
     z, e, bo, m = uk['z'], uk['e'], uk['bo'], uk['m']
     tut = gk_ayikla(z, e, bo, m)
@@ -338,7 +338,7 @@ def _sayim_blogu(uk, atayici, simdi_ms, T=T_LISTE, n_boot=BOOTSTRAP, tohum=0):
                 v = (orta, min(float(alt), orta), max(float(ust), orta))
                 (sonuc_tr if ad is None else sonuc_bol[ad])[t][esik] = v
     bilgi['bolgeN'] = n_bolge
-    # Kartta çizilen bağımsız Mw ≥ 6 (1930–) ve Mw ≥ 7 (1900–) merkez üsleri: gerçekleşmiş kayıt, olasılık değil
+    # Kartta çizilen bağımsız Mw ≥ 6 (1964–) ve Mw ≥ 7 (1918–) merkez üsleri: gerçekleşmiş kayıt, olasılık değil
     bilgi['olaylar'] = [[round(float(e[i]), 2), round(float(bo[i]), 2), round(float(m[i]), 1),
                          (datetime(1970, 1, 1, tzinfo=UTC) + timedelta(milliseconds=float(z[i]))).year] for i in np.flatnonzero(secilen)]
     return {'turkiye': sonuc_tr, 'bolgeler': sonuc_bol, 'bilgi': bilgi}

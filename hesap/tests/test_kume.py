@@ -94,9 +94,13 @@ def test_en_yakin_komsu_kaba_kuvvetle_ayni():
         assert le[j] == pytest.approx(v[i], abs=1e-9)
 
 
-def test_pencere_365_gun():
+def test_pencere_10_yil():
     t0 = 1_600_000_000_000.0
-    zaman = np.array([t0, t0 + 366 * GUN_MS])
+    # 1 yıldan sonraki olay hâlâ ebeveyn bulur (2023 Kahramanmaraş kuyruğu); 3652 günden sonrası bulamaz
+    zaman = np.array([t0, t0 + 400 * GUN_MS])
+    eb, le = en_yakin_komsu(zaman, np.array([38.0, 38.0]), np.array([30.0, 30.0]), np.array([5.0, 3.0]), 1.6, 1.0)
+    assert list(eb) == [-1, 0]
+    zaman = np.array([t0, t0 + 3653 * GUN_MS])
     eb, le = en_yakin_komsu(zaman, np.array([38.0, 38.0]), np.array([30.0, 30.0]), np.array([5.0, 3.0]), 1.6, 1.0)
     assert list(eb) == [-1, -1]
 
