@@ -30,7 +30,7 @@ describe('olağan dışı kartı', () => {
     expect(r.bant.sayi).toBe('14');
     expect(r.bant.birim).toBe('bağımsız deprem');
     expect(r.aralik).toEqual([1, 8]);
-    expect(r.bant.satir1).toContain('Son 7 gün · beklenen 4,1');
+    expect(r.bant.satir1).toContain('Son 7 gün · uzun dönem ort. 4,1');
     expect(r.bant.satir2).toContain('BH düzeltilmiş p 0,001');
     expect(r.uyari).toEqual([]);
   });

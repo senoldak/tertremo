@@ -52,7 +52,7 @@ function panel(o, aralik) {
   let s = `<g data-rol="panel"><rect x="${x}" y="${y}" width="${g}" height="${ph}" rx="10" fill="${RENK.kagit}" fill-opacity="0.94" stroke="${RENK.cizgi}"/>`;
   const sat = (etiket, deger, ty) => yazi(etiket, x + 20, ty, 20, RENK.gri) + yazi(deger, x + g - 20, ty, 24, RENK.murekkep, 'end');
   s += sat('gözlenen k', sayiTr(o.k), y + 42);
-  s += sat('beklenen μ', muYazi(o.beklenen), y + 80);
+  s += sat('uzun dönem ort. μ', muYazi(o.beklenen), y + 80);
   s += sat('%95 aralık', `${sayiTr(aralik[0])} – ${sayiTr(aralik[1])}`, y + 118);
   s += sat('BH düzeltilmiş p', o.bh_p == null ? 'yok' : pYazi(o.bh_p), y + 156);
   // şerit: 0 … max(k, üst) + 1; aralık açık indigo, k koyu çizgi
@@ -86,7 +86,7 @@ export function olagandisiSvg(veri) {
   s += panel(o, aralik);
 
   const notMetni = NOT_METNI;
-  const satir1 = `Son 7 gün · beklenen ${muYazi(o.beklenen)} · %95 aralık ${sayiTr(aralik[0])}–${sayiTr(aralik[1])}`;
+  const satir1 = `Son 7 gün · uzun dönem ort. ${muYazi(o.beklenen)} · %95 aralık ${sayiTr(aralik[0])}–${sayiTr(aralik[1])}`;
   const satir2 = `BH düzeltilmiş p ${o.bh_p == null ? 'yok' : pYazi(o.bh_p)} · hücre ${enlemYazi(h.enlem)} ${boylamYazi(h.boylam)} · ${sayiTr(boy)}°`;
   let baslik = `Olağan dışı etkinlik · ${olayBaslik(veri)}`;
   if (genislik(baslik, 46) > 800) baslik = 'Olağan dışı etkinlik';

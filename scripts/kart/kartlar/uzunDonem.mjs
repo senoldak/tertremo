@@ -10,7 +10,9 @@ import { taze } from './izgara.mjs';
 import { yuzde } from './etasHaftalik.mjs';
 
 /** Panel notu (16 px satırlar): hangi satır hangi katalogtan. */
-export const KATALOG_SATIR = ['Mw ≥ 6–7: USGS 1964/1918– kataloğu;', 'Mw 5: EMSC 2018–. Kümelenmiş olaylar', 'ayıklanmış (Gardner–Knopoff / yakın komşu).'];
+export const KATALOG_SATIR = ['Mw ≥ 6–7: USGS 1964/1918–, Gardner–Knopoff;', 'Mw 5: EMSC 2018–, yakın komşu ayıklaması.', 'Satırlar tek modelden değildir.'];
+/** Açıklamaya eklenen yöntem notu (Kart 19). */
+export const YONTEM_NOTU = 'Mw 5 satırı kısa EMSC kaydı (2018–) ve en yakın komşu ayıklamasıyla, Mw ≥ 6–7 satırları uzun USGS kaydı ve Gardner–Knopoff ile hesaplanır; satırlar tek modelden gelmez.';
 export const KATALOG_NOTU = 'Mw ≥ 6–7: USGS 1964/1918– kataloğu; Mw 5: EMSC 2018–';
 export const TURKIYE_AD = 'Türkiye (kıyıdan 30 km dahil)';
 const NOT = 'Olasılık hesabıdır; depremin yeri ve zamanı önceden bilinemez. Zamandan bağımsız Poisson modeli.';
@@ -88,6 +90,7 @@ export function aciklama(b) {
     `${TURKIYE_AD}: kayıttan hesaplanan hıza göre, belirtilen sürede en az bir deprem olma olasılığı:\n${satir(1)}\n${satir(10)}\n${satir(50)}`,
     `Harita, ${BAS_YIL(b)}–${SON_YIL(b)} arasında kaydedilen bağımsız Mw ≥ 6 depremlerin merkez üslerini gösterir (büyük halka: Mw ≥ 7); geçmiş kaydı gösterir, gelecekteki yer ve zamanı göstermez.`,
     `${KATALOG_NOTU}. Kümelenme ayıklandı: Mw ≥ 6–7 bağımsız ana depremler (Gardner–Knopoff; Türkiye'de ${b.turkiye.n6} Mw ≥ 6, ${b.turkiye.n7} Mw ≥ 7 olay; tamlık: Michael 2014), Mw 5 en yakın komşu (Mc ${sayiTr(b.mc, 1)}, b ${sayiTr(t.b, 2)}). Zamandan bağımsız Poisson; aralık %10–%90 (yeniden örnekleme).`,
+    YONTEM_NOTU,
     'Olasılık hesabıdır; depremin yeri ve zamanı önceden bilinemez.',
   ].join('\n\n');
   return a.length > 1024 ? a.slice(0, 1020).replace(/<[^>]*$/, '') + '…' : a;

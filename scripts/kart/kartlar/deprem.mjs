@@ -45,9 +45,10 @@ const DOLGU = [0.07, 0.11, 0.16];
 /** → {svg, uyari}: kartın iç SVG'si ve düzen uyarıları (kart() logoyu ekler). */
 export function depremSvg(veri) {
   const o = veri.olay;
-  const rs = [2, 3, 4].map((e) => halkaYaricapi(o.mw, o.derinlik, e));
+  const rs = [1.5, 3.5, 4.5].map((e) => halkaYaricapi(o.mw, o.derinlik, e));
+  const rKadraj = halkaYaricapi(o.mw, o.derinlik, 3); // harita kadrajı eskisi gibi MMI 3 yarıçapına göre
   const kutuda = kutuIcinde(o);
-  const m = kutuda ? turkiyeCevresi() : bolgeHaritasi({ enlem: o.enlem, boylam: o.boylam, kmYaricap: Math.min(500, Math.max(120, rs[1] * 1.3)) });
+  const m = kutuda ? turkiyeCevresi() : bolgeHaritasi({ enlem: o.enlem, boylam: o.boylam, kmYaricap: Math.min(500, Math.max(120, rKadraj * 1.3)) });
   const cx = m.px(o.boylam), cy = m.py(o.enlem);
   let s = m.zemin;
   let daireler = '';
@@ -58,9 +59,9 @@ export function depremSvg(veri) {
   s += `<svg x="0" y="0" width="${HARITA_G}" height="${HARITA_Y}" viewBox="0 0 ${HARITA_G} ${HARITA_Y}" overflow="hidden">${daireler}</svg>`;
   s += halka(cx, cy, 15, 6, RENK.indigo);
 
-  const parca = [[4, 'belirgin'], [3, 'hafif'], [2, 'çok hafif']].map(([e, ad], i) => [e, ad, rs[2 - i]]).filter((p) => p[2] > 0);
+  const parca = [[4.5, 'orta'], [3.5, 'hafif'], [1.5, 'zayıf']].map(([e, ad], i) => [e, ad, rs[2 - i]]).filter((p) => p[2] > 0);
   const notMetni = parca.length
-    ? 'Halkalar: tahmini hissedilme · ' + parca.map(([e, ad, r]) => `${ad} (${e === 4 ? 'MMI 4' : e}) ${sayiTr(Math.round(r))} km`).join(' · ')
+    ? 'Halkalar: tahmini hissedilme · ' + parca.map(([e, ad, r]) => `${ad} (${e === 4.5 ? 'MMI ' : ''}${sayiTr(e, 1)}) ${sayiTr(Math.round(r))} km`).join(' · ')
     : 'Tahmini hissedilme alanı çok dar';
   const bant = {
     sayi: sayiTr(o.mw, 1), birim: mwBirim(o.tur), baslik: olayBaslik(veri),

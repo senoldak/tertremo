@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import sharp from 'sharp';
 import { DONEMSEL, donemsel } from '../../scripts/kart/calistir.mjs';
 import { aciklama as grAciklama, aylikGr, grDogrusu, grNoktalari, grSvg } from '../../scripts/kart/kartlar/gr.mjs';
+import { turkiyeCevresi } from '../../scripts/kart/harita.mjs';
 import { B_SINIRLAR, SIGMA_ESIK, aciklama as bAciklama, aylikB, bSinif, bSvg } from '../../scripts/kart/kartlar/bharita.mjs';
 import { L_SINIRLAR, aciklama as lAciklama, ceyreklikLambda, lambda4, lambdaSinif, lambdaSvg, turkiyeB } from '../../scripts/kart/kartlar/lambdaharita.mjs';
 import { SKALA } from '../../scripts/kart/kartlar/izgara.mjs';
@@ -162,12 +163,26 @@ describe('λ haritası', () => {
     expect((await sharp(k.png).metadata()).width).toBe(1200);
     expect(await ceyreklikLambda({}, { simdi })).toBeNull();
   });
-  it('lejant çizili hücrelerle çakışmaz: hücre olmayan köşeye taşınır', () => {
-    const doluSag = [hucre('34_42', 1.0, 0.05, 90, 5), hucre('34_44', 1.0, 0.05, 90, 5), hucre('35_41', 1.0, 0.05, 90, 5)];
-    const r = bSvg(hucreVeri(doluSag));
-    expect(r.svg).toContain('data-rol="lejant"');
-    const m = r.svg.match(/data-rol="lejant"><rect x="([\d.]+)"/);
-    expect(Number(m[1])).toBeLessThan(900);   // sağ alt dolu → başka yere
+  it('lejant çizili hücrelerle çakışmaz (Türkiye hücreleri; kutu levha ile kesişmez)', () => {
+    const anahtarlar = ['36_36', '36_37', '36_38', '37_40', '37_42', '38_43', '40_43', '41_35'];
+    const r = bSvg(hucreVeri(anahtarlar.map((k) => hucre(k, 1.0, 0.05, 90, 5))));
+    expect(r.cizilen).toBe(anahtarlar.length);
+    const m = r.svg.match(/data-rol="lejant"><rect x="([\d.-]+)" y="([\d.-]+)" width="([\d.]+)" height="([\d.]+)"/);
+    const [x, y, g, h] = m.slice(1).map(Number);
+    const harita = turkiyeCevresi();
+    for (const k of anahtarlar) {
+      const [la, lo] = k.split('_').map(Number);
+      const kes = harita.px(lo) < x + g && harita.px(lo + 1) > x && harita.py(la + 1) < y + h && harita.py(la) > y;
+      expect(kes, k).toBe(false);
+    }
+  });
+  it('yalnız merkezi Türkiye + 30 km içindeki hücreler çizilir; büyük sayı onların toplamı', () => {
+    const v = hucreVeri([hucre('38_32', 1.0, 0.05, 100, 100, 3.0), hucre('38_21', 1.0, 0.05, 100, 100, 3.0), hucre('34_42', 1.0, 0.05, 100, 100, 3.0), hucre('40_29', 1.0, 0.05, 100, 200, 3.0)]);
+    const r = lambdaSvg(v);
+    expect(r.cizilen).toBe(2);                 // 38_21 (Ege, Yunanistan) ve 34_42 (Irak/Suriye) dışarıda
+    expect(r.toplam).toBeCloseTo(30, 9);
+    expect(bSvg(v).cizilen).toBe(2);
+    expect(r.bant.satir2).toContain('Türkiye (kıyıdan 30 km)');
   });
 });
 

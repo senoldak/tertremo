@@ -73,8 +73,8 @@ describe('hissedildi kartı', () => {
     const ilk = ilSirala(il).slice(0, 2).map((x) => x.ad);
     expect(ilk).toEqual(expect.arrayContaining(['Balıkesir', 'Manisa']));
   });
-  it('büyük sayı MMI ≥ 3 il sayısı; çakışma yok', () => {
-    const il = [{ ad: 'Manisa', mmi: 5.2 }, { ad: 'İzmir', mmi: 4.3 }, { ad: 'Uşak', mmi: 3.0 }, { ad: 'Ankara', mmi: 2.9 }];
+  it('büyük sayı MMI ≥ 2,5 il sayısı; çakışma yok', () => {
+    const il = [{ ad: 'Manisa', mmi: 5.2 }, { ad: 'İzmir', mmi: 4.3 }, { ad: 'Uşak', mmi: 3.0 }, { ad: 'Ankara', mmi: 2.4 }];
     const r = hissedildiSvg({ olay: olay({ mw: 6.1, enlem: 39.22, boylam: 28.17 }), siddetIller: il });
     expect(r.sayi).toBe(3);
     expect(r.uyari).toEqual([]);
@@ -83,6 +83,6 @@ describe('hissedildi kartı', () => {
     const png = await hissedildi({ olay: olay({ mw: 3.2 }), siddetIller: [] });
     expect((await sharp(png).metadata()).width).toBe(1200);
     const r = hissedildiSvg({ olay: olay(), siddetIller: [{ ad: 'Elazığ', mmi: 4.2 }] });
-    expect(r.svg).toContain('#9e98e2');
+    expect(r.svg).toContain('#c9c5ef'); // 4,2 → IV (3,5–4,5)
   });
 });

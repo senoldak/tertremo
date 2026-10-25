@@ -4,6 +4,7 @@
 // Renk: tek tonlu indigo skala (tehlike çağrışımı yok).
 import { kart, sayiTr } from '../cekirdek.mjs';
 import { altBant, bantUyari, not, notUyari } from '../duzen.mjs';
+import { turkiyeHucreleri } from '../turkiye.mjs';
 import { hucreHaritasi, lejant, mcAraligi, siniflayici, taze, yilAraligi } from './izgara.mjs';
 
 export const B_SINIRLAR = [0.6, 0.8, 1.0, 1.2, 1.4];
@@ -17,8 +18,9 @@ const ortanca = (d) => { const s = [...d].sort((a, b) => a - b); return s.length
 
 /** → {svg, uyari, cizilen, taramali, metin}. */
 export function bSvg(v) {
-  const dolu = v.hucreler.filter(gecerli);
-  const h = hucreHaritasi(v.hucreler, {
+  const tr = turkiyeHucreleri(v.hucreler);
+  const dolu = tr.filter(gecerli);
+  const h = hucreHaritasi(tr, {
     sinif: (x) => (gecerli(x) ? bSinif(x.b) : null),
     etiket: (x) => sayiTr(x.b, 2),
     tarama: (x) => x.sigma_b > SIGMA_ESIK,
@@ -27,7 +29,7 @@ export function bSvg(v) {
   const bant = {
     sayi: dolu.length ? sayiTr(ortanca(dolu.map((x) => x.b)), 2) : '—', birim: 'ortanca b-değeri',
     baslik: 'Türkiye b-değeri haritası',
-    satir1: `${yilAraligi(v)} · ${h.cizilen} hücre (1°), her biri n ≥ 50 · Mc ${mcAraligi(dolu, sayiTr)}`,
+    satir1: `Türkiye (kıyıdan 30 km) · ${yilAraligi(v)} · ${h.cizilen} hücre · Mc ${mcAraligi(dolu, sayiTr)}`,
     satir2: `Çizgili: σ_b > 0,15, belirsiz · σ_b: Shi–Bolt`,
   };
   const svg = h.zemin + h.katman +
@@ -37,12 +39,12 @@ export function bSvg(v) {
 
 /** Telegram açıklaması (HTML, ≤ 1024). */
 export function aciklama(v) {
-  const dolu = v.hucreler.filter(gecerli);
+  const dolu = turkiyeHucreleri(v.hucreler).filter(gecerli);
   const belirsiz = dolu.filter((x) => x.sigma_b > SIGMA_ESIK).length;
   const a = [
     `<b>Türkiye b-değeri haritası</b> · ${yilAraligi(v)}`,
     `b-değeri, küçük depremlerin büyüklere oranını anlatan bir sayıdır; yüksek b küçük depremlerin payının görece fazla olduğunu gösterir. ` +
-    `Harita 1° hücrelere bölünmüş Türkiye kataloğunu (EMSC) gösterir; ortanca b ${sayiTr(ortanca(dolu.map((x) => x.b)), 2)}.`,
+    `Harita, Türkiye'nin (kıyıdan 30 km) 1° hücrelere bölünmüş kataloğunu (EMSC) gösterir; ortanca b ${sayiTr(ortanca(dolu.map((x) => x.b)), 2)}.`,
     `Yalnız Mc'nin üstünde en az 50 olayı olan hücreler çizilir (n ≥ 50; ${dolu.length} hücre), diğerleri boştur. Her hücrenin Mc değeri farklıdır (${mcAraligi(dolu, sayiTr)}). ` +
     `Çizgili ${belirsiz} hücrenin σ_b değeri 0,15'ten büyük: belirsiz.`,
     `Betimleyici; tahmin değildir. Yöntem: Aki–Utsu b, Shi–Bolt σ_b; küçük örnekte b değişimlerini yanlış okumamak için eşikler Marzocchi vd. 2019'a göre.`,

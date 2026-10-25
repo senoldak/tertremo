@@ -86,12 +86,12 @@ export function enerjiSvg(veri, { toplam12 } = {}) {
     s += yazi(`× ${nMetni(n)}`, x0 + g + 14, y + 10, r.olay ? 26 : 22, r.olay ? RENK.indigo : RENK.gri);
   });
   const altY = ust + 20 + satirlar.length * adim + 22;
-  s += yazi(`E = 10^(1,5 · Mw + 4,8) J  →  ${jouleMetni(E)}`, 56, Math.min(altY + 18, 500), 22, RENK.murekkep);
+  s += yazi(`E = 10^(1,5 · Mw + 4,8) J  →  yaklaşık ${jouleMetni(E)}`, 56, Math.min(altY + 18, 500), 22, RENK.murekkep);
 
   const notMetni = 'Çubuk uzunluğu log ölçeklidir: 1 büyüklük ≈ 31,6 kat enerji · Gutenberg–Richter bağıntısı, ortalama değerdir';
   const bant = {
     sayi: `×${nMetni(N)}`, birim: 'M4 deprem eşdeğeri', baslik: olayBaslik(veri),
-    satir1: `Mw ${sayiTr(mw, 1)} · enerji ≈ ${jouleMetni(E)}`,
+    satir1: `Mw ${sayiTr(mw, 1)} · yaklaşık enerji ${jouleMetni(E)}`,
     satir2: oran ? `Türkiye ve çevresinin son 12 ay toplamına oranı: ${oran}` : tarihTr(o.zaman, { saniye: false }),
   };
   s += not(notMetni) + altBant(bant);

@@ -1,5 +1,6 @@
 // Kart 2: Nerelerde hissedildi. Sol: il il renklendirilmiş Türkiye haritası (il merkezinde tahmini MMI);
-// sağ: en yüksek 10 il çubuğu ve renk lejandı. Büyük sayı: MMI ≥ 3 olan il sayısı.
+// sağ: en yüksek 10 il çubuğu ve renk lejandı. Büyük sayı: MMI ≥ 2,5 (yuvarlanınca III, "zayıf") olan il sayısı.
+// Sınıf kenarları USGS MMI sözcüklerine göre x,5'te (tam sayı sınıfı sürekli değerin yuvarlanmasıdır): II–III zayıf, IV hafif, V orta, VI güçlü, VII+ çok güçlü.
 import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { RENK, genislik, kart, kisalt, sayiTr, tarihTr, yazi } from '../cekirdek.mjs';
@@ -9,10 +10,11 @@ import { altBant, bantUyari, not, notUyari } from '../duzen.mjs';
 import { olayBaslik, mwBirim } from './deprem.mjs';
 
 const RENKLER = ['#e6e4f6', '#c9c5ef', '#9e98e2', '#6b64d4', '#3d36c9'];
-const ETIKET = ['2–3', '3–4', '4–5', '5–6', '≥ 6'];
+const ETIKET = ['II–III', 'IV', 'V', 'VI', 'VII+'];
 const iller = JSON.parse(fs.readFileSync(fileURLToPath(new URL('../../../data/harita/iller.json', import.meta.url)), 'utf8'));
 
-const sinif = (v) => (v >= 6 ? 4 : v >= 5 ? 3 : v >= 4 ? 2 : v >= 3 ? 1 : v >= 2 ? 0 : -1);
+const sinif = (v) => (v >= 6.5 ? 4 : v >= 5.5 ? 3 : v >= 4.5 ? 2 : v >= 3.5 ? 1 : v >= 1.5 ? 0 : -1);
+const ESIK_SAYI = 2.5; // büyük sayıya giren en düşük MMI (yuvarlanınca III)
 // "Elâzığ" / "Elazığ" gibi yazım farklarını eşler.
 const anahtar = (ad) => String(ad).toLocaleLowerCase('tr-TR').replace(/â/g, 'a').replace(/î/g, 'i').replace(/û/g, 'u');
 
@@ -69,20 +71,19 @@ export function hissedildiSvg(veri) {
     s += `<rect x="${bx}" y="${y - 11}" width="${((x.mmi / 8) * bw).toFixed(1)}" height="20" fill="${RENKLER[Math.max(0, sinif(x.mmi))]}"/>`;
     s += yazi(sayiTr(x.mmi, 1), 1170, y + 7, 20, RENK.murekkep, 'end');
   });
-  s += yazi('MMI', 820, 482, 18, RENK.gri);
+  s += yazi('MMI · il merkezinde tahmini şiddet', 820, 456, 18, RENK.gri);
   ETIKET.forEach((e, i) => {
-    const x = 870 + i * 60;
-    s += `<rect x="${x}" y="466" width="22" height="20" fill="${RENKLER[i]}" stroke="${RENK.cizgi}"/>` + yazi(e, x + 26, 482, 16, RENK.gri);
+    const x = 820 + i * 70;
+    s += `<rect x="${x}" y="468" width="56" height="18" fill="${RENKLER[i]}" stroke="${RENK.cizgi}"/>` + yazi(e, x + 28, 508, 16, RENK.gri, 'middle');
   });
-  s += yazi('il merkezinde tahmini şiddet', 820, 515, 18, RENK.gri);
 
   const notMetni = 'Allen ve ark. (2012) hiposantral şiddet bağıntısı · il merkezleri · ölçülmüş değil';
-  const sayi = liste.filter((i) => i.mmi >= 3).length;
-  let satir1 = ilk.length ? 'En yüksek: ' + ilk.slice(0, 3).map((x) => `${x.ad} ${sayiTr(x.mmi, 1)}`).join(' · ') : 'MMI 3\'e ulaşan il yok';
+  const sayi = liste.filter((i) => i.mmi >= ESIK_SAYI).length;
+  let satir1 = ilk.length ? 'En yüksek: ' + ilk.slice(0, 3).map((x) => `${x.ad} ${sayiTr(x.mmi, 1)}`).join(' · ') : 'MMI 2,5\'e ulaşan il yok';
   if (genislik(satir1, 28) > 800 && ilk.length > 2) satir1 = 'En yüksek: ' + ilk.slice(0, 2).map((x) => `${x.ad} ${sayiTr(x.mmi, 1)}`).join(' · ');
   const bant = {
     sayi: String(sayi), birim: 'ilde hissedilir', baslik: baslikMetni(veri), satir1,
-    satir2: 'MMI 3 = hafif hissedilir · ' + tarihTr(o.zaman, { saniye: false }),
+    satir2: 'MMI ≥ 2,5: zayıf hissedilir · ' + tarihTr(o.zaman, { saniye: false }),
   };
   s += not(notMetni) + altBant(bant);
   return { svg: s, uyari: [...bantUyari(bant), ...notUyari(notMetni)], sayi };

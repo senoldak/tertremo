@@ -4,6 +4,7 @@
 // yoksa Türkiye b'si. Hücre Mc'si katalog tamlığının altına inmez (hesap/hucre.py); hücrede Mc üstü n ≥ 10 olay yoksa ya da Mc > 4 ise boş. Tek tonlu indigo skala.
 import { kart, sayiTr } from '../cekirdek.mjs';
 import { altBant, bantUyari, not, notUyari } from '../duzen.mjs';
+import { turkiyeHucreleri } from '../turkiye.mjs';
 import { hucreHaritasi, lejant, siniflayici, taze, yilAraligi } from './izgara.mjs';
 
 export const M_ORTAK = 4.0;
@@ -30,7 +31,7 @@ const lamYazi = (l) => sayiTr(l, l < 1 ? 2 : l < 10 ? 1 : 0);
 /** Çizilecek hücreler + λ(≥4) değerleri. */
 function hazirla(v) {
   const bTr = turkiyeB(v);
-  const dolu = v.hucreler.filter(gecerli).map((h) => ({ ...h, l4: lambda4(h, bTr) }));
+  const dolu = turkiyeHucreleri(v.hucreler).filter(gecerli).map((h) => ({ ...h, l4: lambda4(h, bTr) }));
   return { dolu, toplam: dolu.reduce((t, h) => t + h.l4, 0) };
 }
 
@@ -42,10 +43,10 @@ export function lambdaSvg(v) {
     sayi: dolu.length ? lamYazi(toplam) : '—', birim: 'olay/yıl · Mw ≥ 4',
     baslik: 'Arka plan deprem hızı haritası',
     satir1: `${yilAraligi(v)} · ${h.cizilen} hücre (1°, n ≥ 10) · Mw ≥ 4'e çevrilmiş`,
-    satir2: 'Sayı: haritadaki hücrelerin toplamı · kümelenme ayıklanmış',
+    satir2: 'Türkiye (kıyıdan 30 km) · kümelenme ayıklanmış',
   };
   const svg = h.zemin + h.katman + lejant("olay / yıl, Mw ≥ 4'e çevrilmiş", ETIKETLER, { kutular: h.kutular }) + not(NOT) + altBant(bant);
-  return { svg, uyari: [...bantUyari(bant), ...notUyari(NOT)], cizilen: h.cizilen, metin: NOT, toplam };
+  return { svg, uyari: [...bantUyari(bant), ...notUyari(NOT)], cizilen: h.cizilen, metin: NOT, toplam, bant };
 }
 
 /** Telegram açıklaması (HTML, ≤ 1024). */
@@ -55,7 +56,7 @@ export function aciklama(v) {
   const [la, lo] = en ? en.anahtar.split('_').map(Number) : [0, 0];
   const a = [
     `<b>Arka plan deprem hızı haritası</b> · ${yilAraligi(v)}`,
-    `Harita, 1° hücrelerde yılda kaç bağımsız depremin (Mw ≥ 4) beklendiğini kayıttan gösterir. Artçılar ve kümelenmiş olaylar en yakın komşu yöntemiyle ayıklanmıştır. ` +
+    `Harita, Türkiye'de (kıyıdan 30 km) 1° hücrelerde yılda kaç bağımsız depremin (Mw ≥ 4) beklendiğini kayıttan gösterir. Artçılar ve kümelenmiş olaylar en yakın komşu yöntemiyle ayıklanmıştır. ` +
     `Her hücrenin tamlık büyüklüğü (Mc) farklı olduğundan sayılar Gutenberg–Richter ile ortak eşiğe (Mw ≥ 4) çevrilmiştir: Mc üstünde en az 50 olayı olan hücrelerde hücrenin kendi b'si, daha azında Türkiye b'si kullanılır. Mc üstünde en az 10 olayı olan ${dolu.length} hücre çizilir.` +
     (en ? ` Çizilen hücrelerin toplamı yılda ${lamYazi(toplam)} olay; en yoğun hücre ${la}–${la + 1}° K, ${lo}–${lo + 1}° D (yılda ${lamYazi(en.l4)}).` : ''),
     'Betimleyici; tahmin değildir.',
