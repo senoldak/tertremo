@@ -1,7 +1,7 @@
 # Kart 19 — uzun dönem deprem olasılığı (zamandan bağımsız Poisson; deprem tahmini değildir).
 # - λ(M ≥ Mc): kümelenmesi ayrılmış (en yakın komşu, hesap/kume.py) olay sayısı / gözlem yılı.
 # - G–R uzatma: λ(M) = λ(Mc)·10^(−b(M−Mc)); P(T yılda ≥ 1 olay) = 1 − exp(−λ(M)·T).
-# - Mw ≥ 6 ve Mw ≥ 7: UZUN USGS kaydı (data/tarihte-bugun.json, 1900–, Gardner–Knopoff ile ayıklanmış; λ = olay/yıl, Mw ≥ 6 için 1930'dan,
+# - Mw ≥ 6 ve Mw ≥ 7: UZUN USGS kaydı (data/uzun-katalog.json, 1900–, Gardner–Knopoff ile ayıklanmış; λ = olay/yıl, Mw ≥ 6 için 1930'dan,
 #   Mw ≥ 7 için 1900'den; Türkiye ve bölgeler için doğrudan sayım). EMSC 2018– yalnız Mw ≥ 5 satırı ve b için (G–R uzatma).
 # - Aralık: Poisson bootstrap (her olaya Poisson(1) ağırlık = olay sayısı da değişir), 1.000 çekim; b ve λ HER çekimde yeniden
 #   hesaplanır (Türkiye ve her bölge için); orta = veri üzerindeki nokta değeri, aralık = %10 / %90. Bölgelerin ve Türkiye'nin
@@ -10,6 +10,7 @@
 # - Bölge b'si: bölgede ≥ 100 bağımsız olay varsa kendi Aki–Utsu b'si (0,6–1,5 dışıysa Türkiye b'si), yoksa Türkiye b'si.
 # Bağımlılık: yalnız numpy/scipy (gece hesabının requirements.txt'i); shapely gerekmez.
 import argparse
+import bisect
 import json
 import math
 import os
@@ -32,7 +33,11 @@ BOOTSTRAP = 1000
 DM = 0.1
 BOLGE_B_EN_AZ = 100
 SURUM = 'uzun-1'
-TARIHTE_BUGUN = os.path.join(os.path.dirname(__file__), '..', 'data', 'tarihte-bugun.json')
+UZUN_KATALOG = os.path.join(os.path.dirname(__file__), '..', 'data', 'uzun-katalog.json')
+UZUN_ONBELLEK = os.path.join(os.path.dirname(__file__), '.onbellek', 'uzun-katalog.json')
+USGS_ADRES = 'https://earthquake.usgs.gov/fdsnws/event/1/query'
+TR_KUTU = {'enAz': 35.5, 'enCok': 42.5, 'boyAz': 25.5, 'boyCok': 45.0}   # scripts/kart/veri-hazirla.mjs ile aynı
+TSI_MS = 3 * 3600_000
 M6_BAS = 1930      # Mw ≥ 6 tamlığı: 1930'dan (1900'e kadar iyimser)
 M7_BAS = 1900      # Mw ≥ 7 tamlığı: 1900'den
 BOLGE_DOSYA = os.path.join(os.path.dirname(__file__), '..', 'data', 'bolgeler.json')
@@ -177,19 +182,102 @@ def _tablo(sonuc):
     return {str(t): {str(int(m)): [round(float(v), 4) for v in d] for m, d in mm.items()} for t, mm in sonuc.items()}
 
 
-# ---------- uzun katalog (Mw ≥ 6, USGS 1900–): data/tarihte-bugun.json ----------
+# ---------- uzun katalog (Mw ≥ 6, USGS 1900–): data/uzun-katalog.json ----------
 # Aynı USGS FDSN kaydı (Türkiye çevresi kutusu 35,5–42,5 K, 25,5–45 D, Mw ≥ 6, 1900–bugün; scripts/kart/veri-hazirla.mjs
-# --tarihte-bugun) K12 kartıyla ortak olduğundan yeniden indirilmez; dosya depoda. Mw ≥ 6–7 olasılığı bu kayıttan doğrudan sayımla
+# --uzun-katalog) depoda sabit dosya olarak durur; gece işi yalnız dosyadaki en yeni kayıttan sonrasını USGS'den çekip
+# hesap/.onbellek/uzun-katalog.json'da birleştirir (depoya yazılmaz). Mw ≥ 6–7 olasılığı bu kayıttan doğrudan sayımla
 # (λ = olay / yıl) hesaplanır: 8,8 yıllık EMSC kaydının G–R uzatması büyük depremleri hafife alıyordu.
 # Kümelenme: Gardner & Knopoff (1974) pencereleri (en yakın komşu Mw ≥ 6'da, yaklaşık 125 olayda güvenilir değil).
 
-def uzun_katalog_yukle(yol=TARIHTE_BUGUN):
-    """data/tarihte-bugun.json → {'z' (UTC ms), 'e', 'bo', 'm'}; kayıtlardaki saat Türkiye yerel saati (UTC+3)."""
-    with open(yol, encoding='utf-8') as f:
-        k = json.load(f)
-    z = np.array([datetime.fromisoformat(f"{o['t']}T{o['s']}:00").replace(tzinfo=UTC).timestamp() * 1000 - 3 * 3600_000 for o in k])
+def _kayit_ms(o):
+    return datetime.fromisoformat(f"{o['t']}T{o['s']}:00").replace(tzinfo=UTC).timestamp() * 1000 - TSI_MS
+
+
+def uzun_kayitlar_oku(yol=None, onbellek=None):
+    """Kayıt listesi: önbellek varsa ve okunabiliyorsa o, yoksa depodaki taban dosya."""
+    onbellek = UZUN_ONBELLEK if onbellek is None else onbellek
+    for y in ([yol] if yol else [onbellek, UZUN_KATALOG]):
+        try:
+            with open(y, encoding='utf-8') as f:
+                k = json.load(f)
+            if isinstance(k, list) and k:
+                return k
+        except (OSError, ValueError):
+            continue
+    raise FileNotFoundError(UZUN_KATALOG)
+
+
+def uzun_katalog_yukle(yol=None, onbellek=None):
+    """Uzun katalog → {'z' (UTC ms), 'e', 'bo', 'm'}; kayıtlardaki saat Türkiye yerel saati (UTC+3).
+    yol verilmezse hesap/.onbellek/uzun-katalog.json (varsa), yoksa data/uzun-katalog.json."""
+    k = uzun_kayitlar_oku(yol, onbellek)
+    z = np.array([_kayit_ms(o) for o in k])
     return {'z': z, 'e': np.array([o['enlem'] for o in k], float), 'bo': np.array([o['boylam'] for o in k], float),
             'm': np.array([o['mw'] for o in k], float)}
+
+
+def uzun_birlestir(kayitlar, yeni, zaman_s=60, mesafe=50.0):
+    """kayitlar + yeni; yenilerden kayitlarda (|Δt| ≤ zaman_s sn ve ≤ mesafe km) karşılığı olanlar atılır (yeni içinde de tekilleştirilir).
+    Zamana göre sıralı liste döner."""
+    sirali = sorted(kayitlar, key=_kayit_ms)
+    ms = [_kayit_ms(o) for o in sirali]
+    for o in sorted(yeni, key=_kayit_ms):
+        z = _kayit_ms(o)
+        i = bisect.bisect_left(ms, z - zaman_s * 1000)
+        var = False
+        while i < len(ms) and ms[i] <= z + zaman_s * 1000:
+            c = sirali[i]
+            if float(mesafe_km(o['enlem'], o['boylam'], c['enlem'], c['boylam'])) <= mesafe:
+                var = True
+                break
+            i += 1
+        if not var:
+            j = bisect.bisect_right(ms, z)
+            ms.insert(j, z)
+            sirali.insert(j, o)
+    return sirali
+
+
+def usgs_kayit(f):
+    """USGS GeoJSON özelliği → {t, s (UTC+3), enlem, boylam, mw} (JS kayitDonustur ile aynı alanlar, yer adı hariç)."""
+    boylam, enlem = f['geometry']['coordinates'][:2]
+    yerel = datetime.fromtimestamp((f['properties']['time'] + TSI_MS) / 1000, UTC)
+    return {'t': yerel.strftime('%Y-%m-%d'), 's': yerel.strftime('%H:%M'), 'enlem': round(enlem, 2), 'boylam': round(boylam, 2),
+            'mw': round(f['properties']['mag'], 1)}
+
+
+def usgs_getir(bas_gun, zaman_asimi=20):
+    """USGS FDSN: bas_gun (YYYY-AA-GG) sonrası, Türkiye kutusu, Mw ≥ 6 → kayıt listesi."""
+    import urllib.parse
+    import urllib.request
+    q = urllib.parse.urlencode({
+        'format': 'geojson', 'starttime': bas_gun, 'minmagnitude': 6, 'orderby': 'time-asc', 'limit': 20000,
+        'minlatitude': TR_KUTU['enAz'], 'maxlatitude': TR_KUTU['enCok'], 'minlongitude': TR_KUTU['boyAz'], 'maxlongitude': TR_KUTU['boyCok']})
+    with urllib.request.urlopen(f'{USGS_ADRES}?{q}', timeout=zaman_asimi) as y:
+        ozellikler = json.load(y)['features']
+    return [usgs_kayit(f) for f in ozellikler if f['properties'].get('mag') is not None]
+
+
+def uzun_katalog_guncelle(onbellek=UZUN_ONBELLEK, getir=None):
+    """Taban/önbellekteki en yeni kayıttan (1 gün pay) sonrasını USGS'den çeker, birleştirir, önbelleğe yazar.
+    Ağ ya da dosya hatası gece işini düşürmez: uyarı basılır, eldeki liste (önbellek/taban) döner. Dönen: kayıt listesi."""
+    getir = getir or usgs_getir
+    kayitlar = uzun_kayitlar_oku(None, onbellek)
+    try:
+        son = max(_kayit_ms(o) for o in kayitlar)
+        bas = datetime.fromtimestamp(son / 1000 - 86400, UTC).strftime('%Y-%m-%d')
+        yeni = getir(bas)
+        birlesik = uzun_birlestir(kayitlar, yeni)
+        if len(birlesik) != len(kayitlar) or not os.path.exists(onbellek):
+            os.makedirs(os.path.dirname(onbellek), exist_ok=True)
+            gecici = onbellek + '.tmp'
+            with open(gecici, 'w', encoding='utf-8') as f:
+                json.dump(birlesik, f, ensure_ascii=False, separators=(',', ':'))
+            os.replace(gecici, onbellek)
+        return birlesik
+    except Exception as h:
+        print(f'UYARI uzun katalog güncellenemedi, eldeki kayıt kullanılacak: {type(h).__name__}: {h}', file=sys.stderr)
+        return kayitlar
 
 
 def gk_pencere(m):
@@ -306,7 +394,7 @@ def uzun_donem_ortak(mw, bolge, yil, mc, b_tr, bolgeler, b_bolge, T=T_LISTE, M=M
 
 def uzun_donem_blogu(z, e, bo, m, bagimsiz, simdi_ms, atayici=None, n_boot=BOOTSTRAP, mc=None, b=None, tohum=0, uzun=None):
     """kart-veri.json 'uzunDonem' bloğu. z/e/bo/m: EMSC Türkiye kataloğu (yalnız Mw ≥ 5 satırı ve b için), bagimsiz: kümelenmesi
-    ayrılmış maske. Mw ≥ 6 ve ≥ 7 satırları uzun USGS kaydından (uzun: uzun_katalog_yukle() biçimi; yoksa data/tarihte-bugun.json)."""
+    ayrılmış maske. Mw ≥ 6 ve ≥ 7 satırları uzun USGS kaydından (uzun: uzun_katalog_yukle() biçimi; yoksa data/uzun-katalog.json)."""
     z, e, bo, m = (np.asarray(x, float) for x in (z, e, bo, m))
     bagimsiz = np.asarray(bagimsiz, bool)
     if mc is None:

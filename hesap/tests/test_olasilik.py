@@ -1,3 +1,4 @@
+import os
 import json
 import math
 
@@ -216,3 +217,67 @@ def test_uzun_katalog_sayim_basit_sayimla_tutarli(atayici):
     assert 0.5 < r['turkiye'][1][6.0][0] < 0.7
     o, a, u = r['turkiye'][10][7.0]
     assert a >= 0 and o >= a and u >= o and u - a > 0
+
+
+# ---------- uzun katalog: otomatik güncelleme ----------
+
+def _k(t, s, en, bo, mw):
+    return {'t': t, 's': s, 'enlem': en, 'boylam': bo, 'mw': mw}
+
+
+def test_uzun_birlestir_tekilleştirir_ve_siralar():
+    taban = [_k('2023-02-06', '04:17', 37.17, 37.03, 7.8), _k('2023-02-06', '13:24', 38.02, 37.2, 7.5)]
+    yeni = [
+        _k('2023-02-06', '04:17', 37.2, 37.0, 7.8),       # aynı olay (≈4 km, aynı dakika) → atılır
+        _k('2023-02-06', '04:18', 37.3, 37.1, 6.0),       # +60 sn içinde ama 17 km: ≤ 50 km → aynı sayılır, atılır
+        _k('2023-02-06', '04:18', 41.0, 29.0, 6.1),       # +60 sn içinde ama 450 km → yeni
+        _k('2023-02-20', '20:04', 36.1, 36.0, 6.4),       # yeni
+        _k('2023-02-20', '20:04', 36.1, 36.0, 6.4),       # yeni içinde tekrar → bir kez
+    ]
+    s = olasilik.uzun_birlestir(taban, yeni)
+    assert [(o['t'], o['s']) for o in s] == [('2023-02-06', '04:17'), ('2023-02-06', '04:18'), ('2023-02-06', '13:24'), ('2023-02-20', '20:04')]
+    assert len(taban) == 2    # girdi değişmez
+
+
+def test_uzun_birlestir_60_sn_disinda_yakin_olay_yenidir():
+    taban = [_k('2023-02-06', '04:17', 37.17, 37.03, 7.8)]
+    s = olasilik.uzun_birlestir(taban, [_k('2023-02-06', '04:19', 37.17, 37.03, 6.2)])
+    assert len(s) == 2
+
+
+def test_usgs_kayit_yerel_saat_ve_alanlar():
+    f = {'geometry': {'coordinates': [37.032, 37.166, 10]}, 'properties': {'time': 1675646000000, 'mag': 7.84}}   # 2023-02-06 01:13:20 UTC
+    assert olasilik.usgs_kayit(f) == {'t': '2023-02-06', 's': '04:13', 'enlem': 37.17, 'boylam': 37.03, 'mw': 7.8}
+
+
+def test_uzun_katalog_guncelle_birlestirir_onbellege_yazar(tmp_path):
+    onb = str(tmp_path / 'uzun-katalog.json')
+    taban_n = len(olasilik.uzun_kayitlar_oku(None, onb))
+    cagri = []
+
+    def getir(bas):
+        cagri.append(bas)
+        return [_k('2099-01-01', '12:00', 38.0, 38.0, 6.5)]
+    s = olasilik.uzun_katalog_guncelle(onb, getir)
+    assert len(s) == taban_n + 1 and s[-1]['t'] == '2099-01-01'
+    assert len(cagri) == 1 and cagri[0] < '2099'
+    # önbellek okunur; ikinci çağrıda başlangıç artık en yeni kayıttan (1 gün pay) gelir ve tekrar eklenmez
+    assert olasilik.uzun_katalog_yukle(onbellek=onb)['m'].size == taban_n + 1
+    s2 = olasilik.uzun_katalog_guncelle(onb, getir)
+    assert len(s2) == taban_n + 1 and cagri[1] == '2098-12-31'
+
+
+def test_uzun_katalog_cevrimdisi_tabana_duser(tmp_path, capsys):
+    onb = str(tmp_path / 'alt' / 'uzun-katalog.json')
+    taban_n = len(olasilik.uzun_kayitlar_oku(None, onb))
+    s = olasilik.uzun_katalog_guncelle(onb)          # conftest ağı kapatır → OSError
+    assert len(s) == taban_n
+    assert 'UYARI' in capsys.readouterr().err
+    assert not os.path.exists(onb)                   # önbellek yazılmadı
+    assert olasilik.uzun_katalog_yukle(onbellek=onb)['m'].size == taban_n
+
+
+def test_uzun_katalog_bozuk_onbellek_tabana_duser(tmp_path):
+    onb = tmp_path / 'uzun-katalog.json'
+    onb.write_text('{bozuk', encoding='utf-8')
+    assert olasilik.uzun_katalog_yukle(onbellek=str(onb))['m'].size > 100

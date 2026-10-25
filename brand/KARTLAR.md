@@ -50,7 +50,7 @@ Saatler TSİ. Eşikler Worker'daki uygulamadır (`vesaire/tertremo/src/kart.js`,
 | 15 | Aylık b haritası (`aylikB`) | ayın 1'i 10:30 | 1° hücrelerde b (n ≥ 50) | EMSC kataloğu | n < 50 hücre boş; betimleyicidir, "tahmin değildir" |
 | 16 | Arka plan hızı (`ceyreklikLambda`) | Oca / Nis / Tem / Eki 1'i 11:00 | bağımsız deprem hızı λ (yıl⁻¹, M ≥ 4'e çevrilmiş), hücre haritası | EMSC kataloğu, kümeleme ayıklanmış | "Tahmin değildir" |
 | 17 | Dünya haftası (`dunyaHafta`) | Pazar 20:00 | son 7 günün Mw ≥ 5 dünya depremleri, levha sınırları | USGS (kamu malı), EMSC; PB2002 | Levha atfı kartta |
-| 19 | Uzun dönem olasılık (`uzunDonem`) | ayın 1'i 12:00 | P = 1 − e^(−λT), T = 1 / 10 / 50 yıl, Mw ≥ 5 / 6 / 7; bölge ve Türkiye; bootstrap %10–%90 | EMSC (2018–), USGS uzun katalog (Mw ≥ 6 ve 7), Gardner–Knopoff ayıklama | Bölgeler birbiriyle kıyaslanmaz; kısa katalog notu; "Olasılık tahminidir; deprem tahmini değildir." |
+| 19 | Uzun dönem olasılık (`uzunDonem`) | ayın 1'i 12:00 | P = 1 − e^(−λT), T = 1 / 10 / 50 yıl, Mw ≥ 5 / 6 / 7; bölge ve Türkiye; bootstrap %10–%90 | EMSC (2018–), USGS uzun katalog (`data/uzun-katalog.json`; gece işi yenilerini önbellekte birleştirir; Mw ≥ 6 ve 7), Gardner–Knopoff ayıklama | Bölgeler birbiriyle kıyaslanmaz; kısa katalog notu; "Olasılık tahminidir; deprem tahmini değildir." |
 | 20 | Haftalık olasılık, ETAS (`etas`) | Pazartesi 10:00 | önümüzdeki 7 günde en az bir Mw ≥ 5 / 6 olasılığı, Türkiye ve 7 bölge | ETAS (Ogata; Mizrahi vd. 2021) | Yayın kapısı: 52 haftalık ileriye dönük sınavı geçmedikçe kanala gitmez, yalnızca özel sohbete düşer. Ön kayıt: [docs/etas-on-kayit.md](../docs/etas-on-kayit.md) |
 
 ## Veri kaynakları ve lisansları

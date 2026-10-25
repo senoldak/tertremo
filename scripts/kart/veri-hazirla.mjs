@@ -1,6 +1,6 @@
 // Harita verisini hazırlar (bir kez çalışır, çıktı kommitlenir; ham indirmeler kommitlenmez).
 // Kullanım: node scripts/kart/veri-hazirla.mjs <ham-klasör>   (klasör yoksa oluşturulur, dosyalar yoksa indirilir)
-// Ek: --tarihte-bugun → USGS FDSN'den data/tarihte-bugun.json (yalnız bunu üretir).
+// Ek: --uzun-katalog → USGS FDSN'den data/uzun-katalog.json (yalnız bunu üretir; gece işi bunu hesap/.onbellek'te kendi güncel tutar).
 // Çıktı: data/harita/{ulkeler-bolge,ulkeler-dunya,iller,levhalar}.json + kaynak.txt
 // Halkalar düz sayı dizisidir: [boylam, enlem, boylam, enlem, ...].
 import fs from 'node:fs';
@@ -75,8 +75,8 @@ export function kayitDonustur(f, harita) {
   };
 }
 
-/** USGS FDSN (kamu malı): 1900–bugün, Türkiye çevresi kutusu, M ≥ 6 → data/tarihte-bugun.json. */
-async function tarihteBugunHazirla() {
+/** USGS FDSN (kamu malı): 1900–bugün, Türkiye çevresi kutusu, M ≥ 6 → data/uzun-katalog.json. */
+async function uzunKatalogHazirla() {
   const harita = { iller: JSON.parse(fs.readFileSync(path.join(CIKTI, 'iller.json'), 'utf8')), ulkeler: JSON.parse(fs.readFileSync(path.join(CIKTI, 'ulkeler-bolge.json'), 'utf8')) };
   const q = new URLSearchParams({
     format: 'geojson', starttime: '1900-01-01', endtime: new Date().toISOString().slice(0, 10), minmagnitude: '6',
@@ -87,8 +87,8 @@ async function tarihteBugunHazirla() {
   if (!r.ok) throw new Error(`USGS: ${r.status}`);
   const kayit = (await r.json()).features.map((f) => kayitDonustur(f, harita));
   const s = JSON.stringify(kayit);
-  fs.writeFileSync(path.join(CIKTI, '..', 'tarihte-bugun.json'), s);
-  console.log('tarihte-bugun.json', kayit.length, 'kayıt', (s.length / 1024).toFixed(0), 'KB');
+  fs.writeFileSync(path.join(CIKTI, '..', 'uzun-katalog.json'), s);
+  console.log('uzun-katalog.json', kayit.length, 'kayıt', (s.length / 1024).toFixed(0), 'KB');
 }
 
 const BOLGE_KUTU = { d1: 19, d2: 50, k1: 30, k2: 47 };
@@ -162,7 +162,7 @@ const yaz = (ad, veri) => {
 };
 
 async function main() {
-  if (process.argv.includes('--tarihte-bugun')) return tarihteBugunHazirla();
+  if (process.argv.includes('--uzun-katalog')) return uzunKatalogHazirla();
   const klasor = path.resolve(process.argv.slice(2).find((a) => !a.startsWith('--')) ?? 'ham-harita');
   fs.mkdirSync(klasor, { recursive: true });
   fs.mkdirSync(CIKTI, { recursive: true });

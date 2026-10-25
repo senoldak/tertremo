@@ -429,7 +429,9 @@ def kart_verisi(onbellek, olaylar_tr, hucreler_tr, bas_ms, simdi, kume_tr=None, 
             tr = sorted((o for o in olaylar_tr if o['id'] in kume_tr), key=lambda o: o['zaman_ms'])
             z, e, bo, m = (np.array([o[k] for o in tr], float) for k in ('zaman_ms', 'enlem', 'boylam', 'mw'))
             bagimsiz = np.array([kume_tr[o['id']][0] is None for o in tr], bool)
-            parcalar['uzunDonem'] = olasilik.uzun_donem_blogu(z, e, bo, m, bagimsiz, simdi)
+            olasilik.uzun_katalog_guncelle(os.path.join(onbellek, 'uzun-katalog.json'))   # ağ hatası yalnız uyarı; taban/önbellek kullanılır
+            uzun = olasilik.uzun_katalog_yukle(onbellek=os.path.join(onbellek, 'uzun-katalog.json'))
+            parcalar['uzunDonem'] = olasilik.uzun_donem_blogu(z, e, bo, m, bagimsiz, simdi, uzun=uzun)
             kartveri.guncelle(yol, {'uzunDonem': parcalar['uzunDonem']})
         except Exception as h:
             print(f'UYARI uzun dönem olasılığı hesaplanamadı: {type(h).__name__}: {h}', file=sys.stderr)
