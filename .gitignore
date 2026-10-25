@@ -1,0 +1,10 @@
+node_modules/
+.env*
+.anahtarlar
+dist/
+docs/superpowers/
+.superpowers/
+__pycache__/
+hesap/.onbellek/
+.pytest_cache/
+docs/literatur-taramasi-*.md

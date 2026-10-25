@@ -1,0 +1,117 @@
+# Kart gönderici: olay kartları (D1 `kart` kuyruğu → çiz → Worker → Telegram) ve dönemsel kartlar.
+#
+# GEREKEN SIRLAR (Settings → Secrets and variables → Actions; burada OLUŞTURULMAZ):
+#   TERTREMO_KART_ANAHTARI  Worker kart adresi için ortak anahtar (Telegram gönderimini Worker yapar;
+#                           bot token'ı, kanal ve sahip kimliği GitHub'da YOK)
+#   CF_D1_TOKEN         D1 okuma/yazma token'ı
+#   CF_HESAP            Cloudflare hesap kimliği
+#   D1_ID               D1 veritabanı kimliği
+#
+# Tetikleyiciler:
+#   workflow_dispatch  mod = `olay` (Worker kuyruğa yazınca tetikler) ya da `donemsel <tur>` (elle deneme)
+#   schedule           dönemsel kartlar (UTC = TSİ − 3)
+#
+# Dönemsel takvim (tasarım §17.1/§17.4). YALNIZ uygulanmış olanlar aktif; diğerleri ilgili görev
+# (K10–K12) bitince aşağıdaki `on.schedule` listesine ve `mod` eşlemesine eklenecek:
+#   gunluk        21:00 TSİ  0 18 * * *      (K10, AKTİF)  haftalik  Pzt 08:00  0 5 * * 1   (K10, AKTİF)
+#   dunya-haftasi Paz 20:00  0 17 * * 0      (K10, AKTİF)  tarihte-bugun 09:00      0 6 * * *   (K12, AKTİF)
+#   aylik-gr      ayın 1'i 10:00  0 7 1 * *  (K11, AKTİF)  aylik-b  10:30      30 7 1 * *  (K11, AKTİF)
+#   ceyreklik λ   Oca/Nis/Tem/Eki 1'i 11:00  0 8 1 1,4,7,10 *  (K11, AKTİF)
+#   uzun-donem    ayın 1'i 12:00  0 9 1 * *  (K14, AKTİF)
+#   etas          Pzt 10:00 TSİ  0 7 * * 1   (K15, AKTİF; yayin=true değilse yalnız sahibe gider)
+name: kart
+
+on:
+  workflow_dispatch:
+    inputs:
+      mod:
+        description: 'olay  |  donemsel etas  |  donemsel tarihteBugun  |  donemsel aylikGr  |  donemsel aylikB  |  donemsel ceyreklikLambda  |  donemsel uzunDonem  |  donemsel gunluk  |  donemsel haftalik  |  donemsel dunyaHafta'
+        required: true
+        default: 'olay'
+  schedule:
+    - cron: '0 7 * * 1'   # etas — haftalık olasılık, Pzt 10:00 TSİ
+    - cron: '0 6 * * *'   # tarihte bugün — her gün 09:00 TSİ (o gün kayıt yoksa sessizce çıkar)
+    - cron: '0 7 1 * *'   # aylık Gutenberg–Richter — ayın 1'i 10:00 TSİ
+    - cron: '30 7 1 * *'  # aylık b haritası — ayın 1'i 10:30 TSİ
+    - cron: '0 8 1 1,4,7,10 *'  # çeyreklik λ haritası — Oca/Nis/Tem/Eki 1'i 11:00 TSİ
+    - cron: '0 9 1 * *'   # uzun dönem olasılık — ayın 1'i 12:00 TSİ
+    - cron: '0 18 * * *'  # günlük — her gün 21:00 TSİ (boş gün de kart olur)
+    - cron: '0 5 * * 1'   # haftalık — Pzt 08:00 TSİ
+    - cron: '0 17 * * 0'  # dünya haftası — Paz 20:00 TSİ
+
+permissions:
+  contents: read
+
+concurrency:
+  # Zamanlanmış dönemsel koşu kendi grubunda: olay tetiği onu iptal edemez/kuyruğunu bozamaz.
+  group: ${{ github.event_name == 'schedule' && 'kart-donemsel' || 'kart' }}
+  cancel-in-progress: false
+
+jobs:
+  kart:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Modu belirle
+        id: mod
+        env:
+          GIRDI: ${{ github.event.inputs.mod }}
+          ZAMANLAMA: ${{ github.event.schedule }}
+        run: |
+          case "$ZAMANLAMA" in
+            '0 7 * * 1') MOD='donemsel etas' ;;
+            '0 6 * * *') MOD='donemsel tarihteBugun' ;;
+            '0 7 1 * *') MOD='donemsel aylikGr' ;;
+            '30 7 1 * *') MOD='donemsel aylikB' ;;
+            '0 8 1 1,4,7,10 *') MOD='donemsel ceyreklikLambda' ;;
+            '0 9 1 * *') MOD='donemsel uzunDonem' ;;
+            '0 18 * * *') MOD='donemsel gunluk' ;;
+            '0 5 * * 1') MOD='donemsel haftalik' ;;
+            '0 17 * * 0') MOD='donemsel dunyaHafta' ;;
+            '') MOD="$GIRDI" ;;
+            *) echo "bilinmeyen zamanlama: $ZAMANLAMA" >&2; exit 1 ;;
+          esac
+          case "$MOD" in
+            olay|'donemsel etas'|'donemsel tarihteBugun'|'donemsel aylikGr'|'donemsel aylikB'|'donemsel ceyreklikLambda'|'donemsel uzunDonem'|'donemsel gunluk'|'donemsel haftalik'|'donemsel dunyaHafta') ;;
+            *) echo "geçersiz mod: $MOD" >&2; exit 1 ;;
+          esac
+          echo "mod=$MOD" >> "$GITHUB_OUTPUT"
+          echo "BASLA=$(date +%s)" >> "$GITHUB_ENV"
+
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      # Katalog/hesap önbelleği yalnız dönemsel mod için (kart-veri.json); olay modunda geri yüklenmez.
+      - name: Katalog önbelleği
+        if: startsWith(steps.mod.outputs.mod, 'donemsel')
+        uses: actions/cache/restore@v4
+        with:
+          path: hesap/.onbellek
+          key: katalog-v2-${{ github.run_id }}
+          restore-keys: |
+            katalog-v2-
+            katalog-v1-
+
+      - name: Kartları çiz ve gönder
+        env:
+          MOD: ${{ steps.mod.outputs.mod }}
+          # Sırlar yalnız bu adımda (checkout / npm ci kurulum betikleri sırları görmesin; repo herkese açık).
+          TERTREMO_KART_ANAHTARI: ${{ secrets.TERTREMO_KART_ANAHTARI }}
+          CF_D1_TOKEN: ${{ secrets.CF_D1_TOKEN }}
+          CF_HESAP: ${{ secrets.CF_HESAP }}
+          D1_ID: ${{ secrets.D1_ID }}
+        run: node scripts/kart/calistir.mjs $MOD
+
+      # Gerçek koşucudaki süreyi ölçmek için (bütçe: olay başına ~1 dk, dönemsel ~2 dk).
+      - name: Süre
+        if: always()
+        run: |
+          SURE=$(( $(date +%s) - BASLA ))
+          echo "iş süresi (kurulum dahil): ${SURE} sn"
+          echo "kart (${{ steps.mod.outputs.mod }}): ${SURE} sn" >> "$GITHUB_STEP_SUMMARY"

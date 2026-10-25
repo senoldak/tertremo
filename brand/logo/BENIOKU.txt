@@ -1,0 +1,12 @@
+tertremo logo paketi. Üretici: scripts/logo-paketi.mjs (npm run logo) — elle düzenlemeyin, yeniden üretin.
+
+- tertremo-logo              Yazı logosu (saydam zemin): kanal açıklaması, belge, sunum
+- tertremo-logo-koyu-zemin   Koyu zemin için: yazı kâğıt rengi, halka açık indigo
+- tertremo-ikon              Telegram profil resmi ve uygulama simgesi (640 x 640, indigo zemin; Telegram daireye kırpar)
+- tertremo-ikon-kagit        Aynı ikon kâğıt zeminde
+- tertremo-favicon           Saydam zeminli küçük simge (64 x 64)
+
+Fikir: tertremo Esperanto'da "deprem" (tero = yer, tremo = titreme). Son "o" merkez üssüdür: halka + ortada nokta.
+Duruş: sakin ve kesin — ölçüm cihazı gibi; alarm değil.
+Kurallar: indigo yalnız halkada; halka döndürülmez, ikinci halka/dalga eklenmez; gölge, kontur, başka yazı tipiyle yeniden yazma yok.
+Renkler: indigo #3d36c9 (koyu zeminde #8f88ff), mürekkep #16181d, kâğıt #f5f4ef. Yazı tipi: Manrope Bold (SIL OFL 1.1, brand/yazi/OFL.txt).

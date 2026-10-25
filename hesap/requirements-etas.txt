@@ -1,0 +1,22 @@
+# Kart 20 (haftalık ETAS olasılığı) ve doğrulaması: hesap/etas.py, hesap/dogrulama.py.
+# Gece hesabının (gunluk.py) bağımlılıklarına dokunmamak için ayrı dosya; iş akışına bağlanınca
+# `pip install -r hesap/requirements-etas.txt` (Python 3.12+; etas paketi >= 3.12 ister).
+-r requirements.txt
+# L. Mizrahi `etas` 3.0.0, MIT — kommit sabit (etiketli sürüm yok)
+etas @ git+https://github.com/lmizrahi/etas@097f08b69a4f06f9c38d14799dedfbd4543144e3
+pandas==3.1.0
+geopandas==1.2.0
+shapely==2.2.0
+pyproj==3.8.0
+pyogrio==0.13.0
+pynverse==0.1.4.6
+tabulate==0.10.0
+# pyCSEP 0.8.0, BSD-3-Clause — yalnız doğrulama (T-testi, N-testi nicelikleri)
+pycsep==0.8.0
+matplotlib==3.11.2
+cartopy==0.26.0
+obspy==1.5.1
+rasterio==1.5.2
+mercantile==1.2.1
+# seismostats (AGPL-3.0) kurulmaz: etas.simulation yalnız bir dönüş tipi için içe aktarıyor, hesap/etas.py boş
+# modülle karşılıyor.

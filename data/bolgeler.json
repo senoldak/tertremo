@@ -1,0 +1,15 @@
+{
+  "aciklama": "Türkiye'nin 7 coğrafi bölgesi, il kümeleri (il adları data/harita/iller.json 'ad' alanıyla aynı). Bir deprem, bölgesinin il sınırları içindeyse ya da en yakın bölge il sınırına en çok tampon_km uzaklıktaysa (kıyı ve sınır şeridi) o bölgeye sayılır.",
+  "tampon_km": 30,
+  "birlestir_aciklama": "Kart 19 (uzun dönem olasılık) yedi bölgeyi altıya indirir: aşağıdaki eşleme anahtarındaki bölge, değerindeki bölgeyle birleştirilir (Güneydoğu Anadolu → Doğu Anadolu). Haftalık ETAS kartı (Kart 20) yedi bölgeyi olduğu gibi kullanır.",
+  "birlestir": { "Güneydoğu Anadolu": "Doğu Anadolu" },
+  "bolgeler": [
+    { "ad": "Marmara", "iller": ["Edirne", "Kırklareli", "Tekirdağ", "İstanbul", "Kocaeli", "Yalova", "Sakarya", "Bilecik", "Bursa", "Balıkesir", "Çanakkale"] },
+    { "ad": "Ege", "iller": ["İzmir", "Manisa", "Aydın", "Denizli", "Muğla", "Afyonkarahisar", "Kütahya", "Uşak"] },
+    { "ad": "Akdeniz", "iller": ["Antalya", "Isparta", "Burdur", "Mersin", "Adana", "Hatay", "Osmaniye", "Kahramanmaraş"] },
+    { "ad": "İç Anadolu", "iller": ["Ankara", "Konya", "Kayseri", "Eskişehir", "Sivas", "Kırıkkale", "Aksaray", "Karaman", "Kırşehir", "Niğde", "Nevşehir", "Yozgat", "Çankırı"] },
+    { "ad": "Karadeniz", "iller": ["Rize", "Trabzon", "Artvin", "Giresun", "Ordu", "Samsun", "Sinop", "Kastamonu", "Bartın", "Zonguldak", "Düzce", "Bolu", "Karabük", "Tokat", "Çorum", "Amasya", "Gümüşhane", "Bayburt"] },
+    { "ad": "Doğu Anadolu", "iller": ["Erzurum", "Erzincan", "Kars", "Ağrı", "Iğdır", "Ardahan", "Van", "Muş", "Bitlis", "Bingöl", "Tunceli", "Elâzığ", "Malatya", "Hakkâri"] },
+    { "ad": "Güneydoğu Anadolu", "iller": ["Gaziantep", "Şanlıurfa", "Diyarbakır", "Mardin", "Batman", "Siirt", "Şırnak", "Kilis", "Adıyaman"] }
+  ]
+}
