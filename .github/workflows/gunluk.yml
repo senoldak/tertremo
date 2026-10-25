@@ -1,9 +1,9 @@
 # Gece hesabı: katalog (Actions cache) → kume, kume_param, hucre → D1 (hesap/gunluk.py)
 name: gunluk
 
+# Tetik: Cloudflare'deki vesaire cron'u her gün 06:00 TSİ'de workflow_dispatch ile (vesaire/tertremo/src/takvim.js);
+# GitHub `schedule` gecikmeli olduğu için kullanılmaz.
 on:
-  schedule:
-    - cron: '0 3 * * *'
   workflow_dispatch:
 
 permissions:

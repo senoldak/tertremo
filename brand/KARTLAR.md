@@ -21,7 +21,7 @@ Kanaldaki her paylaşım çizimlidir. 20 kart var: 11 olay kartı (bir depreme y
 
 ## Kartlar
 
-Saatler TSİ. Eşikler Worker'daki uygulamadır (`vesaire/tertremo/src/kart.js`, `dizikilometre.js`, `etki.js`, `ozet.js`) ve `.github/workflows/kart.yml`'deki cron'lardır.
+Saatler TSİ. Eşikler Worker'daki uygulamadır (`vesaire/tertremo/src/kart.js`, `dizikilometre.js`, `etki.js`, `ozet.js`) ve vesaire cron'unun tetik saatleridir (`vesaire/tertremo/src/takvim.js`).
 
 ### Olay kartları (kanala giden olaylar; Worker kuyruğa yazar, iş akışı çizer; 2 dakikada gelmezse düz metin gider)
 
@@ -40,7 +40,7 @@ Saatler TSİ. Eşikler Worker'daki uygulamadır (`vesaire/tertremo/src/kart.js`,
 | 11 | Olağan dışı etkinlik (`olagandisi`) | hücrede bh_p < 0,05 ve canlı p < 0,05; hücre başına günde en çok bir | hücre haritada, gözlenen / beklenen, Poisson %95 aralığı | D1 kataloğu | "Tahmin değildir." |
 | 21 | Etki (`etki`) | Türkiye ve yakın Mw ≥ 6, dünya Mw ≥ 7, USGS kimliği olan olay; olay + 45 dk, ürün çıkana kadar 10 dk'da bir, olay + 3 saatte vazgeçilir | USGS ShakeMap MMI konturları, kırılma çizgisi, DYFI bildirim sayısı | USGS ShakeMap / DYFI (kamu malı) | Ayrı gönderi, sessiz; kayıp ya da PAGER bilgisi yok; ilk sürümler güncellenir |
 
-### Dönemsel kartlar (`kart.yml` cron; başarısızsa o gün atlanır, düz metin yedeği yok)
+### Dönemsel kartlar (Cloudflare'deki vesaire cron'u `kart.yml`'i aynı TSİ saatlerinde `workflow_dispatch` ile tetikler; GitHub `schedule` kullanılmaz; başarısızsa o gün atlanır, düz metin yedeği yok)
 
 | # | Kart (tür) | Zaman | Gösterdiği | Veri / lisans | Not |
 |---|---|---|---|---|---|

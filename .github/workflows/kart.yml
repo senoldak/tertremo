@@ -7,18 +7,16 @@
 #   CF_HESAP            Cloudflare hesap kimliği
 #   D1_ID               D1 veritabanı kimliği
 #
-# Tetikleyiciler:
-#   workflow_dispatch  mod = `olay` (Worker kuyruğa yazınca tetikler) ya da `donemsel <tur>` (elle deneme)
-#   schedule           dönemsel kartlar (UTC = TSİ − 3)
+# Tetikleyiciler (hepsi workflow_dispatch; GitHub `schedule` saatlerce gecikebildiği için KULLANILMAZ):
+#   olay        Worker kuyruğa yazınca tetikler (mod = `olay`)
+#   dönemsel    Cloudflare'deki vesaire cron'u (vesaire/tertremo/src/takvim.js) aşağıdaki TSİ saatlerinde
+#               `donemsel <tur>` ile tetikler; en çok 30 dk gecikmeli yakalama, günde bir kez. Elle deneme de aynı mod.
 #
-# Dönemsel takvim (tasarım §17.1/§17.4). YALNIZ uygulanmış olanlar aktif; diğerleri ilgili görev
-# (K10–K12) bitince aşağıdaki `on.schedule` listesine ve `mod` eşlemesine eklenecek:
-#   gunluk        21:00 TSİ  0 18 * * *      (K10, AKTİF)  haftalik  Pzt 08:00  0 5 * * 1   (K10, AKTİF)
-#   dunya-haftasi Paz 20:00  0 17 * * 0      (K10, AKTİF)
-#   aylik-gr      ayın 1'i 10:00  0 7 1 * *  (K11, AKTİF)  aylik-b  10:30      30 7 1 * *  (K11, AKTİF)
-#   ceyreklik λ   Oca/Nis/Tem/Eki 1'i 11:00  0 8 1 1,4,7,10 *  (K11, AKTİF)
-#   uzun-donem    ayın 1'i 12:00  0 9 1 * *  (K14, AKTİF)
-#   etas          Pzt 10:00 TSİ  0 7 * * 1   (K15, AKTİF; yayin=true değilse yalnız sahibe gider)
+# Dönemsel takvim (tasarım §17.1/§17.4), saatler TSİ (takvim.js'teki SLOTLAR ile aynı olmalı):
+#   gunluk        her gün 21:00          haftalik  Pzt 08:00          dunya-haftasi  Paz 20:00
+#   aylik-gr      ayın 1'i 10:00         aylik-b   ayın 1'i 10:30
+#   ceyreklik λ   Oca/Nis/Tem/Eki 1'i 11:00     uzun-donem  ayın 1'i 12:00
+#   etas          Pzt 10:00 (yayin=true değilse yalnız sahibe gider)
 name: kart
 
 on:
@@ -28,22 +26,13 @@ on:
         description: 'olay  |  donemsel etas  |  donemsel aylikGr  |  donemsel aylikB  |  donemsel ceyreklikLambda  |  donemsel uzunDonem  |  donemsel gunluk  |  donemsel haftalik  |  donemsel dunyaHafta'
         required: true
         default: 'olay'
-  schedule:
-    - cron: '0 7 * * 1'   # etas — haftalık olasılık, Pzt 10:00 TSİ
-    - cron: '0 7 1 * *'   # aylık Gutenberg–Richter — ayın 1'i 10:00 TSİ
-    - cron: '30 7 1 * *'  # aylık b haritası — ayın 1'i 10:30 TSİ
-    - cron: '0 8 1 1,4,7,10 *'  # çeyreklik λ haritası — Oca/Nis/Tem/Eki 1'i 11:00 TSİ
-    - cron: '0 9 1 * *'   # uzun dönem olasılık — ayın 1'i 12:00 TSİ
-    - cron: '0 18 * * *'  # günlük — her gün 21:00 TSİ (boş gün de kart olur)
-    - cron: '0 5 * * 1'   # haftalık — Pzt 08:00 TSİ
-    - cron: '0 17 * * 0'  # dünya haftası — Paz 20:00 TSİ
 
 permissions:
   contents: read
 
 concurrency:
-  # Zamanlanmış dönemsel koşu kendi grubunda: olay tetiği onu iptal edemez/kuyruğunu bozamaz.
-  group: ${{ github.event_name == 'schedule' && 'kart-donemsel' || 'kart' }}
+  # Dönemsel koşular kendi grubunda: olay tetiği onları iptal edemez/kuyruğunu bozamaz.
+  group: ${{ startsWith(github.event.inputs.mod, 'donemsel') && 'kart-donemsel' || 'kart' }}
   cancel-in-progress: false
 
 jobs:
@@ -55,20 +44,8 @@ jobs:
         id: mod
         env:
           GIRDI: ${{ github.event.inputs.mod }}
-          ZAMANLAMA: ${{ github.event.schedule }}
         run: |
-          case "$ZAMANLAMA" in
-            '0 7 * * 1') MOD='donemsel etas' ;;
-            '0 7 1 * *') MOD='donemsel aylikGr' ;;
-            '30 7 1 * *') MOD='donemsel aylikB' ;;
-            '0 8 1 1,4,7,10 *') MOD='donemsel ceyreklikLambda' ;;
-            '0 9 1 * *') MOD='donemsel uzunDonem' ;;
-            '0 18 * * *') MOD='donemsel gunluk' ;;
-            '0 5 * * 1') MOD='donemsel haftalik' ;;
-            '0 17 * * 0') MOD='donemsel dunyaHafta' ;;
-            '') MOD="$GIRDI" ;;
-            *) echo "bilinmeyen zamanlama: $ZAMANLAMA" >&2; exit 1 ;;
-          esac
+          MOD="$GIRDI"
           case "$MOD" in
             olay|'donemsel etas'|'donemsel aylikGr'|'donemsel aylikB'|'donemsel ceyreklikLambda'|'donemsel uzunDonem'|'donemsel gunluk'|'donemsel haftalik'|'donemsel dunyaHafta') ;;
             *) echo "geçersiz mod: $MOD" >&2; exit 1 ;;
