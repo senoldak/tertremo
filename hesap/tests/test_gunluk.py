@@ -292,6 +292,17 @@ def test_mod_ve_tavan():
     assert gunluk.mod_sec(5) == ('doldurma', 40_000)
     assert gunluk.mod_sec(0) == ('normal', 20_000)
     assert gunluk.mod_sec(5, tavan=1000) == ('doldurma', 1000)  # elle verilen tavan önceliklidir
+    assert gunluk.mod_sec(5, ayni_gun=True) == ('doldurma', 5_000)
+    assert gunluk.mod_sec(0, ayni_gun=True) == ('normal', 5_000)
+    assert gunluk.mod_sec(5, tavan=30_000, ayni_gun=True) == ('doldurma', 30_000)
+
+
+def test_ayni_utc_gunu():
+    gun = 86_400_000
+    g = 20_000 * gun
+    assert gunluk.ayni_utc_gunu(g + 3 * 3_600_000, g + 22 * 3_600_000)      # 03:01 ve 22:08 UTC
+    assert not gunluk.ayni_utc_gunu(g + 22 * 3_600_000, g + gun + 3 * 3_600_000)
+    assert not gunluk.ayni_utc_gunu(None, g)
 
 
 def test_tavan_iki_modda_da_asilmaz():

@@ -49,13 +49,14 @@ jobs:
             katalog-v2-
             katalog-v1-
 
+      # ETAS denemesinde gece hesabı kuru: D1'e yazmaz (26 Ekim'de deneme 39k satır yazdı, D1 günlük kotası aşıldı)
       - name: Günlük hesap
         timeout-minutes: 15
         env:
           CF_D1_TOKEN: ${{ secrets.CF_D1_TOKEN }}
           CF_HESAP: ${{ secrets.CF_HESAP }}
           D1_ID: ${{ secrets.D1_ID }}
-        run: python -m hesap.gunluk
+        run: python -m hesap.gunluk ${{ inputs.etas == 'deneme' && '--kuru' || '' }}
 
       - name: ETAS günü mü
         id: etas

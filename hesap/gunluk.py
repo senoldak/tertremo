@@ -9,6 +9,8 @@
 #   Doldurma modu: son 400 günün D1'e yazılmamış (ve yazılabilir: kume'si hesaplanmış) olayı varsa tavan 40.000
 #   (geçmiş ~6 gecede dolar). Pay: Worker ≈ 5–8k/gün + hesabın geri kalanı ≈ 15–25k/gün; 40k + Worker < 100k
 #   günlük kotanın yarısı civarında kalır, eşzamanlı bir tamir/yeniden çalıştırmaya yer bırakır.
+#   Aynı UTC gününde ikinci çalıştırma (elle deneme, yeniden çalıştırma) en çok 5.000 yazar: D1 kotası 00:00 UTC'de
+#   sıfırlanır; 26 Ekim'de iki doldurma gecesi (03:01 + 22:08 UTC) 77k yazdı, hesap 100k'yı aştı.
 # - kume_param eşikleri tolerans içinde kalırsa önceki değerler korunur: aksi halde d_f'nin her gece küçük oynaması
 #   bütün kume satırlarını yeniden yazdırırdı.
 import argparse
@@ -35,6 +37,7 @@ GUN_MS = 86_400_000
 SAKLA_GUN = 400
 TAVAN = 20_000
 TAVAN_DOLDURMA = 40_000
+TAVAN_AYNI_GUN = 5_000
 PARCA = 100
 # D1 satır yazımı: her indeks ayrı satır sayılır. olay: tablo + PK + 6 indeks; kume: tablo + PK; hucre/kume_param upsert.
 AG_OLAY = 8
@@ -146,11 +149,18 @@ def birikim(olaylar, durum, simdi, yazilabilir=None):
                and (yazilabilir is None or o['id'] in yazilabilir))
 
 
-def mod_sec(birikim_sayisi, tavan=None):
-    """(mod, tavan): birikim varsa 'doldurma' 40.000, yoksa 'normal' 20.000; elle verilen tavan önceliklidir."""
+def ayni_utc_gunu(onceki_ms, simdi):
+    return onceki_ms is not None and int(onceki_ms) // GUN_MS == int(simdi) // GUN_MS
+
+
+def mod_sec(birikim_sayisi, tavan=None, ayni_gun=False):
+    """(mod, tavan): birikim varsa 'doldurma' 40.000, yoksa 'normal' 20.000; aynı UTC gününde ikinci çalıştırma
+    en çok 5.000. Elle verilen tavan önceliklidir."""
     mod = 'doldurma' if birikim_sayisi > 0 else 'normal'
     if tavan is None:
         tavan = TAVAN_DOLDURMA if mod == 'doldurma' else TAVAN
+        if ayni_gun:
+            tavan = min(tavan, TAVAN_AYNI_GUN)
     return mod, tavan
 
 
@@ -638,7 +648,7 @@ def ana(argv=None):
         isler += olay_kume_isleri(list(olaylar[ad].values()), sonuc[ad][1], durum, KAYNAK[ad], simdi)
     yazilabilir = {cid for ad in KAYNAK for cid in sonuc[ad][1]}
     bekleyen = birikim(tum, durum, simdi, yazilabilir)
-    mod, tavan = mod_sec(bekleyen, a.tavan)
+    mod, tavan = mod_sec(bekleyen, a.tavan, ayni_gun=ayni_utc_gunu(durum['son_calisma'], simdi))
     a.tavan = tavan
     secilen, kalan = tavanla(oncelikli, isler, a.tavan)
     yeni = {ad: 0 for ad in KAYNAK}
