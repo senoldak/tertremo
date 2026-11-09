@@ -1,6 +1,5 @@
 // Kart 20 — Haftalık deprem olasılığı (ETAS, deneysel). Veri: hesap/.onbellek/kart-veri.json → etas
-// (hesap/etas.py) ve etasDogrulama (hesap/dogrulama.py). Yayın kapısı geçmeden (doğrulama + 8 hafta gizli kayıt)
-// kart yalnız sahibin özel sohbetine gider ve "deneysel — doğrulama sürüyor" etiketi taşır.
+// (hesap/etas.py) ve etasDogrulama (hesap/dogrulama.py).
 // Kullanım: node scripts/kart/kartlar/etasHaftalik.mjs <kart-veri.json> <çıktı.png>  → stdout: {hedef, aciklama}
 import fs from 'node:fs';
 import path from 'node:path';
@@ -11,10 +10,6 @@ import { turkiyeCevresi } from '../harita.mjs';
 const VERI = fileURLToPath(new URL('../../../data/', import.meta.url));
 const AYLAR = ['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran', 'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'];
 const KURAL = 'github.com/senoldak/tertremo/blob/main/docs/etas-on-kayit.md';
-const ETIKET = 'deneysel — doğrulama sürüyor';
-const ETIKET_RED = 'deneysel — doğrulamadan geçemedi';
-// Doğrulama kesin olarak geçmediyse (gecti === false) etiket bunu söyler; geçmediği sürece kart kanala gitmez.
-const etiketMetni = (e) => (e?.kapi?.gecti === false ? ETIKET_RED : ETIKET);
 const NOT = 'Olasılık hesabıdır; deprem önceden bilinemez. ETAS (Mizrahi vd. 2021) · Mw ≥ 6 değeri doğrulanmamış';
 // Sıralı indigo tonları (açıktan koyuya); sınırlar P(≥1 Mw ≥ 5, 7 gün)
 const SINIFLAR = [
@@ -58,21 +53,19 @@ export function aralikTr(bas, bit) {
 }
 
 const etasMi = (e) => e?.mod === 'etas';
-const yayin = (e) => e?.kapi?.yayin === true;
 const deger = (e, k) => (etasMi(e) ? k.p5 : k.norm5);
 
-/** Gönderim hedefi: yalnız kapı açıkken kanal, aksi halde sahibin özel sohbeti. */
-export function hedef(kartVeri) {
-  return yayin(kartVeri?.etas) ? 'kanal' : 'ozel';
+/** Gönderim hedefi: her zaman kanal. */
+export function hedef(_kartVeri) {
+  return 'kanal';
 }
 
 const sinavSatiri = (e) => (e?.ileri ? `İleriye dönük sınavda: ${e.ileri.hafta}/${e.ileri.hedef ?? 52} hafta` : null);
 
 /** Kart alt notu (kısaltılmadan). Sınav satırı varsa ETAS atfı yerine o girer (kart tek satır). */
 export function notMetni(e) {
-  const dogrulama = yayin(e) ? 'doğrulamadan geçti' : e.kapi?.gecti === false ? 'doğrulamadan geçemedi' : 'doğrulama sürüyor';
   const sinav = sinavSatiri(e);
-  return sinav ? `Olasılık hesabıdır; deprem önceden bilinemez. ${sinav} · ${dogrulama}` : `${NOT} · ${dogrulama}`;
+  return sinav ? `Olasılık hesabıdır; deprem önceden bilinemez. ${sinav}` : NOT;
 }
 
 /** Telegram açıklaması (HTML, ≤ 1024). */
@@ -80,7 +73,6 @@ export function aciklama(kartVeri) {
   const e = kartVeri.etas;
   const t = e.turkiye;
   const satirlar = [];
-  if (!yayin(e)) satirlar.push(`<i>${etiketMetni(e)}</i>`);
   satirlar.push(`<b>Haftalık deprem olasılığı (deneysel)</b> — ${aralikTr(e.baslangic, e.bitis)}`);
   if (etasMi(e)) {
     satirlar.push(`Türkiye ve çevresinde önümüzdeki 7 günde en az bir Mw 5 ve üzeri deprem olma olasılığı: ` +
@@ -97,12 +89,6 @@ export function aciklama(kartVeri) {
     (sinav ? '' : 'Model son depremlerin artçı etkisini hesaba katar (ETAS). Olağan hafta: zamandan bağımsız Poisson. ') +
     'Resmî bilgi için AFAD.');
   if (sinav) satirlar.push(`${sinav} (kurallar: ${KURAL})`);
-  const ozet = kartVeri.etasDogrulama?.ozet ?? e.kapi?.ozet;
-  const ek = ozet && ozet !== 'doğrulama yapılmadı' ? ` (${ozet})` : '';
-  if (yayin(e)) satirlar.push(`Doğrulama: ${ozet ?? 'geçti'}`);
-  else if (e.kapi?.gecti === false) satirlar.push(`Doğrulama: geçemedi${ek}`);
-  else if (e.kapi?.gecti === true) satirlar.push(`Doğrulama: geçti; ileriye dönük gizli kayıt ${e.kapi.gizliHafta ?? 0}/8 hafta${ek}`);
-  else satirlar.push(`Doğrulama: sürüyor${ek}`);
   let metin = satirlar.join('\n\n');
   if (metin.length > 1024) metin = metin.slice(0, 1020).replace(/<[^>]*$/, '') + '…';
   return metin;
@@ -158,14 +144,6 @@ export function etasSvg(e) {
     lejant += `<rect x="${x}" y="482" width="${kutuG}" height="14" fill="${s.renk}"/>` + yazi(s.ad, x + kutuG / 2, 518, 16, RENK.gri, 'middle');
   });
   lejant = `<rect x="${1160 - SINIFLAR.length * (kutuG + 4) - 12}" y="448" width="${SINIFLAR.length * (kutuG + 4) + 24}" height="80" rx="8" fill="${RENK.kagit}" fill-opacity="0.88"/>` + lejant;
-  // Deneysel etiketi (sağ üst)
-  let etiket = '';
-  if (!yayin(e)) {
-    const metin = etiketMetni(e);
-    const g = genislik(metin, 22) + 28;
-    etiket = rol('etiket', `<rect x="${(1172 - g).toFixed(1)}" y="28" width="${g.toFixed(1)}" height="40" rx="10" fill="${RENK.kagit}" fill-opacity="0.94" stroke="${RENK.indigo}" stroke-width="2"/>` +
-      yazi(metin, 1158, 56, 22, RENK.indigo, 'end'));
-  }
   const tr = e.turkiye;
   const aralik = aralikTr(e.baslangic, e.bitis);
   const bant = etasMi(e)
@@ -175,7 +153,7 @@ export function etasSvg(e) {
     : altBant({ sayi: yuzde(tr.norm5), birim: '7 günde Mw ≥ 5', baslik: 'Haftalık deprem olasılığı (deneysel)',
       satir1: 'Model bu hafta güncellenemedi · olağan hafta değeri',
       satir2: `${aralik} · Mw ≥ 6: ${yuzde(tr.norm6)} (olağan)` });
-  return t.zemin + rol('bolgeler', iller_svg) + etiketler + rol('lejant', lejant) + etiket + not(notMetni(e)) + bant;
+  return t.zemin + rol('bolgeler', iller_svg) + etiketler + rol('lejant', lejant) + not(notMetni(e)) + bant;
 }
 
 /** kart-veri.json içeriği → {png, aciklama, hedef}. */

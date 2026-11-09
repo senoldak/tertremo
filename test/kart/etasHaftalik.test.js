@@ -46,7 +46,7 @@ describe('açıklama', () => {
     expect(a).toContain('Doğu Anadolu %6 (olağan %4)');
     expect(a).toContain('İç Anadolu <%1 (olağan <%1)');
     expect(a).toContain('Bu bir tahmin değil, istatistiksel olasılıktır');
-    expect(a).toContain('deneysel — doğrulama sürüyor');
+    expect(a).not.toContain('deneysel — doğrulama sürüyor');
     expect(a.length).toBeLessThanOrEqual(1024);
   });
   it('"tehlike" ve "uyarı" hiçbir çıktıda yok', () => {
@@ -63,43 +63,21 @@ describe('açıklama', () => {
     expect(a).toContain('%12');
     expect(a).not.toContain('null');
   });
-  it('kapı geçtiyse etiket yok, doğrulama özeti var', () => {
-    const v = veri({ kapi: { gecti: true, ozet: '2022–2026, 250 hafta: bilgi kazancı 0,12/deprem', gizliHafta: 9, yayin: true } });
-    const a = aciklama(v);
-    expect(a).not.toContain('doğrulama sürüyor');
-    expect(a).toContain('bilgi kazancı 0,12/deprem');
-  });
-});
-
-describe('doğrulamadan geçemedi', () => {
-  it('gecti === false: özel sohbet, etiket ve açıklama "doğrulamadan geçemedi" der', () => {
-    const v = veri({ kapi: { gecti: false, ozet: '2022–2026: N-testi reddedildi', gizliHafta: 0, yayin: false } });
-    expect(hedef(v)).toBe('ozel');
-    expect(aciklama(v)).toContain('deneysel — doğrulamadan geçemedi');
-    expect(aciklama(v)).toContain('Doğrulama: geçemedi (2022–2026: N-testi reddedildi)');
-    expect(aciklama(v)).not.toContain('doğrulama sürüyor');
-    expect(etasSvg(v.etas)).toContain('data-rol="etiket"');
-  });
-  it('geçti ama gizli kayıt < 8 hafta: özel, sayaç görünür', () => {
-    const v = veri({ kapi: { gecti: true, ozet: 'x', gizliHafta: 3, yayin: false } });
-    expect(hedef(v)).toBe('ozel');
-    expect(aciklama(v)).toContain('gizli kayıt 3/8 hafta');
-  });
 });
 
 describe('hedef', () => {
-  it('yalnız kapı yayın derse kanal', () => {
-    expect(hedef(veri())).toBe('ozel');
-    expect(hedef(veri({ kapi: { gecti: true, gizliHafta: 7, yayin: false } }))).toBe('ozel');
-    expect(hedef(veri({ kapi: { gecti: true, gizliHafta: 8, yayin: true } }))).toBe('kanal');
-    expect(hedef({})).toBe('ozel');
+  it('her zaman kanal', () => {
+    expect(hedef(veri())).toBe('kanal');
+    expect(hedef(veri({ kapi: { gecti: false, yayin: false } }))).toBe('kanal');
+    expect(hedef({})).toBe('kanal');
   });
 });
 
 describe('kart', () => {
-  it('1200×800 PNG; büyük sayı, birim, deneysel etiketi ve not SVG\'de', async () => {
+  it('1200×800 PNG; büyük sayı, birim, başlık ve not SVG\'de', async () => {
     const svg = etasSvg(veri().etas);
-    for (const rol of ['sayi', 'birim', 'baslik', 'satir1', 'satir2', 'not', 'etiket', 'lejant']) expect(svg).toContain(`data-rol="${rol}"`);
+    for (const rol of ['sayi', 'birim', 'baslik', 'satir1', 'satir2', 'not', 'lejant']) expect(svg).toContain(`data-rol="${rol}"`);
+    expect(svg).not.toContain('data-rol="etiket"');
     const { png } = await etasHaftalik(veri());
     const m = await sharp(png).metadata();
     expect([m.width, m.height]).toEqual([1200, 800]);
