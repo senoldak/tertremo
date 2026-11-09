@@ -44,7 +44,7 @@ describe('açıklama', () => {
     expect(a).toContain('<b>%18</b> (olağan hafta: %12)');
     expect(a).toContain('Mw 6 ve üzeri: %2 (olağan: %1; doğrulanmamış model çıktısı)');
     expect(a).toContain('Doğu Anadolu %6 (olağan %4)');
-    expect(a).toContain('İç Anadolu <%1 (olağan <%1)');
+    expect(a).toContain('İç Anadolu &lt;%1 (olağan &lt;%1)');
     expect(a).toContain('Bu bir tahmin değil, istatistiksel olasılıktır');
     expect(a).not.toContain('deneysel — doğrulama sürüyor');
     expect(a.length).toBeLessThanOrEqual(1024);

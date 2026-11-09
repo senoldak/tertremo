@@ -89,7 +89,7 @@ export function aciklama(kartVeri) {
     (sinav ? '' : 'Model son depremlerin artçı etkisini hesaba katar (ETAS). Olağan hafta: zamandan bağımsız Poisson. ') +
     'Resmî bilgi için AFAD.');
   if (sinav) satirlar.push(`${sinav} (kurallar: ${KURAL})`);
-  let metin = satirlar.join('\n\n');
+  let metin = satirlar.join('\n\n').replace(/<(?!\/?(?:b|i|a)\b)/gi, '&lt;');
   if (metin.length > 1024) metin = metin.slice(0, 1020).replace(/<[^>]*$/, '') + '…';
   return metin;
 }
